@@ -48,6 +48,33 @@ export function playerCourseIds(chapters = []) {
   return [...ids];
 }
 
+// { course, module, chapter } of a chapter's player link, or null.
+function playerRef(url) {
+  try {
+    const q = new URL(url, window.location.origin).searchParams;
+    const ref = { course: q.get('course'), module: q.get('module'), chapter: q.get('chapter') };
+    return ref.course && ref.module && ref.chapter ? ref : null;
+  } catch { return null; }
+}
+
+// A chapter has two numbers: its id across the course (Binomial Theorem: 58),
+// which the apps save progress under and the history API reports, and its
+// number within the module (module 3, chapter 7), which the player's address
+// uses. `chapters` is the course's list (course-bundle-progress.php), where
+// each entry has both: `chapterId` and the link. Every item comes back with
+// `chapter` as the player's number, so its link opens the right chapter, and
+// with the chapter's title when the API sent none.
+export function toPlayerChapters(items, chapters = []) {
+  const refs = chapters.map((c) => ({ c, ref: playerRef(c.url) })).filter((x) => x.ref);
+  return items.map((it) => {
+    const sameModule = (x) => String(x.ref.course) === String(it.course) && String(x.ref.module) === String(it.module);
+    const hit = refs.find((x) => sameModule(x) && String(x.c.chapterId) === String(it.chapter)) // saved under the chapter's id
+      || refs.find((x) => sameModule(x) && x.ref.chapter === String(it.chapter)); // already the player's number
+    if (!hit) return it;
+    return { ...it, chapter: Number(hit.ref.chapter), chapterTitle: it.chapterTitle || hit.c.title || '' };
+  });
+}
+
 async function fromApi(courseIds, size) {
   return (await getWatchHistoryRows(courseIds, size))
     .filter((it) => !it.type || it.type === 'VIDEO')

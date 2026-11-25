@@ -11,7 +11,7 @@ import WatchHistory from '../components/WatchHistory';
 import CatalogBanner, { CATALOG_URL, useCatalogStripClosed } from '../components/CatalogBanner';
 import CatalogSeries from '../components/CatalogSeries';
 import UpcomingCoursesBanner from '../components/UpcomingCoursesBanner';
-import { getWatchHistory, playerCourseIds } from '../lib/watchHistory';
+import { getWatchHistory, playerCourseIds, toPlayerChapters } from '../lib/watchHistory';
 
 /**
  * Enrolled video courses (bundles): the open course shows as a cover with a
@@ -86,7 +86,7 @@ export default function CoursesPage() {
     if (!bundleContent) { setRecent([]); return undefined; }
     let alive = true;
     const load = () => getWatchHistory(playerCourseIds(bundleContent.chapters), 3)
-      .then((list) => { if (alive) setRecent(Array.isArray(list) ? list : []); })
+      .then((list) => { if (alive) setRecent(toPlayerChapters(Array.isArray(list) ? list : [], bundleContent.chapters)); })
       .catch(() => { if (alive) setRecent([]); });
     load();
     const onVisible = () => { if (document.visibilityState === 'visible') load(); };
