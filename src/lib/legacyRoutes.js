@@ -12,5 +12,4 @@ export const LEGACY_ROUTES = {
   '/revisit.html': '/revisit',
   '/weekly-revisit.html': '/weekly-revisit',
   '/course/view-course.html': '/course',
-  '/secure-checkout/checkout.html': '/checkout', // which forwards to the secure checkout site
 };

@@ -8,7 +8,6 @@ import CoursesPage from './pages/CoursesPage';
 import { isAuthenticated } from './lib/auth';
 import { START_PATH } from './lib/api';
 import { LEGACY_ROUTES } from './lib/legacyRoutes';
-import { CHECKOUT_CART_URL } from './lib/checkout';
 import { hasAnyEnrolment, hasCourseEnrolment, isOfflineStudent } from './lib/profile';
 
 // The two landing pages (login, courses) ship in the main bundle; every other
@@ -90,13 +89,6 @@ function LegacyRedirect({ to }) {
   return <Navigate to={`${to}${location.search}`} replace />;
 }
 
-// /checkout?addItem=<code> (and the older /secure-checkout/checkout.html) now live on
-// the secure checkout site; the query string goes along.
-function CheckoutRedirect() {
-  useEffect(() => { window.location.replace(`${CHECKOUT_CART_URL}${window.location.search}`); }, []);
-  return null;
-}
-
 export default function App() {
   usePreloadPages();
   return (
@@ -117,8 +109,6 @@ export default function App() {
           <Route path="/revisit" element={<Protected><RevisitPage variant="exam" /></Protected>} />
           <Route path="/weekly-revisit" element={<Protected><RevisitPage variant="weekly" /></Protected>} />
           <Route path="/course" element={<CoursePage />} />
-          {/* The portal's own checkout page is gone: old links to it go to the secure checkout site. */}
-          <Route path="/checkout" element={<CheckoutRedirect />} />
           <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
         </Routes>
       </Suspense>
