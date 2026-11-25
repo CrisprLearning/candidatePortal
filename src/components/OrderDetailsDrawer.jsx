@@ -152,10 +152,9 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                     {isCounted(item) && <small>Quantity: {item.number || 1}</small>}
                     {item.paymentPlan === 'INSTALLMENT' && <small>Payment Plan: Installments</small>}
                   </div>
-                  {/* On an installment plan: what was paid for the item at checkout, with its whole fee beneath. */}
+                  {/* On an installment plan: what was paid for the item at checkout. */}
                   <span className="cp-order-price">
                     {rupees(paidFor(item))}
-                    {item.paymentPlan === 'INSTALLMENT' && <small>overall fee {rupees(fullPrice(item))}</small>}
                     {isCounted(item) && <small>{rupees(item.unitPrice)} each</small>}
                   </span>
                 </li>
@@ -172,9 +171,7 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                 </div>
               ))}
               {chargeRows.length === 0 && order.extras > 0 && <div><dt>Taxes and charges</dt><dd>{rupees(order.extras)}</dd></div>}
-              <div className="is-total"><dt>{onInstallments ? 'Paid now' : 'Total'}</dt><dd>{rupees(order.amount)}</dd></div>
-              {/* The whole fee of the order: this payment and the installments still to come. */}
-              {onInstallments && <div><dt>Total Course Fee</dt><dd>{rupees(order.amount + deferred)}</dd></div>}
+              <div className="is-total"><dt>{onInstallments && order.status === 'successful' ? 'Total Paid' : 'Total'}</dt><dd>{rupees(order.amount)}</dd></div>
             </dl>
           </section>
 
@@ -184,25 +181,28 @@ export default function OrderDetailsDrawer({ order, onClose }) {
               <h3>Payment schedule</h3>
               {scheduleGroups.length === 0 && <p className="cp-order-muted">The schedule for this order is not available yet.</p>}
               {scheduleGroups.map((group) => (
+                // One timeline per course: its installments top down along a vertical line, each led by its date.
                 <div className="cp-order-schedule" key={group.code}>
-                  {scheduleGroups.length > 1 && <h4>{group.title || group.code}</h4>}
-                  <ul className="cp-order-items">
+                  <h4>{group.title || group.code}</h4>
+                  <ol className="cp-timeline">
                     {group.rows.map((row) => {
                       const ist = INSTALLMENT_STATUS[row.status] || INSTALLMENT_STATUS.pending;
+                      const paid = row.status === 'paid';
                       return (
-                        <li key={row.installmentNo}>
-                          <div>
+                        <li key={row.installmentNo} className={`is-${ist.tone}`}>
+                          <span className="cp-timeline-dot" aria-hidden="true">{paid && <Icon.Check width={11} height={11} />}</span>
+                          <div className="cp-timeline-body">
+                            <small className="cp-timeline-date">{paid ? 'Paid on' : 'Due on'} {(paid && row.paidOn) || row.dueOn || '-'}</small>
                             <strong>{row.label || `Installment ${row.installmentNo}`}</strong>
-                            <small>{row.status === 'paid' ? `Paid on ${row.paidOn || row.dueOn}` : `Due on ${row.dueOn}`}</small>
                           </div>
-                          <span className="cp-order-schedule-amount">
+                          <span className="cp-timeline-amount">
                             {rupees(row.amount)}
                             <Pill tone={ist.tone} size="sm">{ist.label}</Pill>
                           </span>
                         </li>
                       );
                     })}
-                  </ul>
+                  </ol>
                 </div>
               ))}
             </section>

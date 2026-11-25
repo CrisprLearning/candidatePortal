@@ -117,6 +117,10 @@ const routes = {
     });
   },
   // The `newuser` token has no courses, to show the catalog banner.
+  // Paid, not enrolled yet (banner on /courses); the new user has none.
+  'GET /user/upcoming-courses.php': (_b, _u, req) => ok({ courses: isNewUser(req) ? [] : [
+    { code: 'CR0010', title: 'IAT Crash Course', commencement: '30 March, 2027', commencementEpoch: 1806345000, commenced: false, orderReference: '1038' },
+  ] }),
   'GET /user/course-bundle-progress.php': (_b, _u, req) => (isNewUser(req) ? ok({ enrolledCourses: [], coursesMetadata: {} }) : ok({
     enrolledCourses: [{ id: 1, title: 'Class 12 Physics Video Course' }, { id: 2, title: 'Class 11 Chemistry Video Course' }],
     coursesMetadata: {
@@ -198,6 +202,18 @@ const routes = {
     const first = [
       { id: 1042, orderReference: '1042', status: 'pending', items: [{ code: 'NEST26', title: 'NEST 2026 Test Series', type: 'Test Series', unitPrice: 299900, number: 1 }], subTotal: 299900, discount: 0, extras: 53982, amount: 353882, gatewayOrder: 'order_Qx1', paymentReference: '', date: '25 Nov, 2026', time: '10:12 am', createdAt: 1795581720 },
       { id: 1037, orderReference: '1037', status: 'failed', items: [{ code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', unitPrice: 499900, number: 1 }], subTotal: 499900, discount: 0, extras: 89982, amount: 589882, gatewayOrder: 'order_Qw7', paymentReference: '', date: '2 Jun, 2025', time: '6:40 pm', createdAt: 1748869800 },
+      // Two courses on a payment plan: the order drawer shows one schedule timeline per course.
+      { id: 1040, orderReference: '1040', status: 'successful', paymentMode: 'INSTALLMENTS', items: [
+        { code: 'CR0004', title: 'IAT 2026 - Exclusive 1 Year Course', type: 'Course', unitPrice: 2499900, number: 1, paymentPlan: 'INSTALLMENT', payNow: 999900 },
+        { code: 'CR0010', title: 'IAT Crash Course', type: 'Course', unitPrice: 900000, number: 1, paymentPlan: 'INSTALLMENT', payNow: 300000 },
+      ], subTotal: 3399900, discount: 0, extras: 0, amount: 1299900, gatewayOrder: 'order_Qy4', paymentReference: 'pay_Qy4kL9', date: '10 Sep, 2026', time: '11:20 am', createdAt: 1788933000,
+      schedule: [
+        { itemCode: 'CR0004', itemTitle: 'IAT 2026 - Exclusive 1 Year Course', installmentNo: 1, label: 'At registration', status: 'paid', dueOn: '10 Sep, 2026', paidOn: '10 Sep, 2026', amount: 999900 },
+        { itemCode: 'CR0004', itemTitle: 'IAT 2026 - Exclusive 1 Year Course', installmentNo: 2, label: 'Installment 2', status: 'overdue', dueOn: '10 Nov, 2026', paidOn: '', amount: 750000 },
+        { itemCode: 'CR0004', itemTitle: 'IAT 2026 - Exclusive 1 Year Course', installmentNo: 3, label: 'Installment 3', status: 'scheduled', dueOn: '10 Jan, 2027', paidOn: '', amount: 750000 },
+        { itemCode: 'CR0010', itemTitle: 'IAT Crash Course', installmentNo: 1, label: 'At registration', status: 'paid', dueOn: '10 Sep, 2026', paidOn: '10 Sep, 2026', amount: 300000 },
+        { itemCode: 'CR0010', itemTitle: 'IAT Crash Course', installmentNo: 2, label: 'Before commencement', status: 'pending', dueOn: '30 Mar, 2027', paidOn: '', amount: 600000 },
+      ] },
       { id: 1038, orderReference: '1038', status: 'successful', items: [{ code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', unitPrice: 499900, number: 1 }, { code: 'BK01', title: 'IAT Formula Handbook', type: 'Book', unitPrice: 49900, number: 2 }, { code: 'BK02', title: 'Crispr Lab Notebook', type: 'Merchandise', unitPrice: 19900, number: 1 }], subTotal: 619600, discount: 50000, extras: 102528, amount: 672128, gatewayOrder: 'order_Qw9', paymentReference: 'pay_Qw9aB3', date: '2 Jun, 2025', time: '6:44 pm', createdAt: 1748870040, hasProducts: true, deliveryAddress: { name: 'Aarav Menon', mobile: '9876543210', email: 'aarav@example.com', address: '14B Green Meadows, MG Road', locality: 'Kadavanthra', city: 'Kochi', state: 'Kerala', pincode: '682020' }, delivery: { status: 'despatched', courier: 'DTDC', trackingNumber: 'D12345678', updatedOn: '4 Jun, 2025' } },
     ];
     const second = [

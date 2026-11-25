@@ -77,6 +77,12 @@ export async function getTestSeriesProgress(id) {
   return unwrap(await api.get(`/user/test-series-progress.php${id ? `?id=${encodeURIComponent(id)}` : ''}`));
 }
 
+// Courses paid for but not enrolled in yet (not commenced), for the banner on /courses:
+// { courses: [{ code, title, commencement: "30 March, 2027" | "", commenced, orderReference }] }
+export async function getUpcomingCourses() {
+  return unwrap(await api.get('/user/upcoming-courses.php'));
+}
+
 export async function getCourseBundleProgress() {
   return unwrap(await api.get('/user/course-bundle-progress.php'));
 }

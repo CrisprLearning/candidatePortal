@@ -5,7 +5,7 @@ import { Card } from '../components/ui';
 import TileDropdown from '../components/TileDropdown';
 import { useUser } from '../components/UserProvider';
 import { useToast } from '../components/Toast';
-import { getCourseBundleProgress } from '../lib/candidateApi';
+import { getCourseBundleProgress, getUpcomingCourses } from '../lib/candidateApi';
 import { getSearchParam, replaceSearchParam } from '../lib/browser';
 import WatchHistory from '../components/WatchHistory';
 import CatalogBanner, { CATALOG_URL, useCatalogStripClosed } from '../components/CatalogBanner';
@@ -24,6 +24,7 @@ export default function CoursesPage() {
   const [bundleContent, setBundleContent] = useState(null); // { modules, chapters }
   const [activeModule, setActiveModule] = useState(null);
   const [query, setQuery] = useState(''); // chapter search, across every module of the open course
+  const [upcoming, setUpcoming] = useState([]); // paid courses not commenced yet (no enrollment)
   const [recent, setRecent] = useState([]); // last videos watched in the open course
   const [counts, setCounts] = useState({}); // course id -> { modules, chapters }
   const { profile } = useUser() || {};
@@ -74,6 +75,10 @@ export default function CoursesPage() {
       .catch(() => { setBundles([]); setBundlesFound(false); });
   }, [selectCourseBundle]);
 
+  useEffect(() => {
+    getUpcomingCourses().then((d) => setUpcoming(Array.isArray(d?.courses) ? d.courses : [])).catch(() => setUpcoming([]));
+  }, []);
+
   // Last three videos watched in the open course; refreshed when the candidate
   // comes back from the player tab. With no history the section stays hidden.
   useEffect(() => {
@@ -122,6 +127,17 @@ export default function CoursesPage() {
   return (
     <Layout title="Courses" hideTitle>
       <div className="cp-page">
+        {/* Paid for, not enrolled yet: the course is still to commence. */}
+        {upcoming.map((c) => (
+          <div key={c.code} className="cp-upcoming-strip" role="status">
+            <span className="cp-upcoming-strip-icon"><Icon.Calendar width={16} height={16} /></span>
+            <span>
+              You're registered for <b>{c.code} - {c.title}</b>.{' '}
+              {c.commencement && !c.commenced ? <>Classes begin on <b>{c.commencement}</b>.</> : <>Classes will begin soon.</>} Stay tuned!
+            </span>
+          </div>
+        ))}
+
         {/* Already enrolled: a slim reminder that there is more in the catalog. */}
         {bundles?.length > 0 && <CatalogBanner compact closed={stripClosed} onClose={closeStrip} />}
 
