@@ -7,6 +7,7 @@ import { Icon } from '../components/Icons';
 import { Avatar, Card, Pill } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useUser } from '../components/UserProvider';
+import OrderDetailsDrawer, { TXN_STATUS, rupees } from '../components/OrderDetailsDrawer';
 import { getSearchParam, replaceSearchParam, setSearchParam } from '../lib/browser';
 import { getCourseBundleProgress, getTestSeriesProgress, getTransactions, removeIdPhoto, updateProfile as saveProfileApi, uploadIdPhoto, uploadProfilePhoto } from '../lib/candidateApi';
 import { PLACES, buildProfilePayload, isOfflineStudent } from '../lib/profile';
@@ -22,18 +23,6 @@ const TABS = [
   { id: 3, label: () => 'Edit Details', icon: Icon.Pencil, hidden: true },
   { id: 4, label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
 ];
-
-// transactions.php statuses, as shown in the Transactions tab.
-const TXN_STATUS = {
-  successful: { label: 'Successful', tone: 'lime', hint: 'Payment received' },
-  pending: { label: 'Pending', tone: 'sky', hint: 'Payment not completed yet' },
-  failed: { label: 'Failed', tone: 'orange', hint: 'Payment was not completed' },
-};
-
-function rupees(paise) {
-  const value = Number(paise) / 100;
-  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: value % 1 === 0 ? 0 : 2 })}`;
-}
 
 function parentsNames(p = {}) {
   const mother = p.motherName || '';
@@ -193,6 +182,7 @@ export default function ProfilePage() {
 
   // Transactions tab: every purchase, loaded a page at a time when the tab is opened.
   const [txns, setTxns] = useState({ list: null, page: 0, hasMore: false, loading: false, error: false });
+  const [orderOpen, setOrderOpen] = useState(null); // the transaction shown in the order drawer
   function loadTransactions(page) {
     setTxns((t) => ({ ...t, loading: true, error: false }));
     getTransactions(page)
@@ -412,6 +402,7 @@ export default function ProfilePage() {
 
             {activeTab === 5 && (
               <Card>
+                <OrderDetailsDrawer order={orderOpen} onClose={() => setOrderOpen(null)} />
                 <div className="cp-card-head">
                   <h2>My Transactions</h2>
                   {txns.list && <Pill tone="ghost">{txns.list.length}{txns.hasMore ? '+' : ''} {txns.list.length === 1 && !txns.hasMore ? 'purchase' : 'purchases'}</Pill>}
@@ -426,14 +417,21 @@ export default function ProfilePage() {
                         {txns.list.map((t) => {
                           const st = TXN_STATUS[t.status] || TXN_STATUS.failed;
                           return (
-                            <tr key={t.id}>
+                            // The whole row opens the order drawer; the first item stands for the order, "(+2)" for the rest.
+                            <tr
+                              key={t.id}
+                              className="cp-txn-row"
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`Order ${t.orderReference}: view details`}
+                              onClick={() => setOrderOpen(t)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOrderOpen(t); } }}
+                            >
                               <td className="cp-td-muted">#{t.orderReference}</td>
                               <td>
-                                {(t.items || []).map((item, i) => (
-                                  <strong key={i} className="cp-txn-item">{item.title || item.code}{item.number > 1 ? ` × ${item.number}` : ''}</strong>
-                                ))}
-                                {(!t.items || t.items.length === 0) && <span className="cp-td-muted">-</span>}
-                                {t.paymentReference && <small className="cp-course-schedule">Payment ID {t.paymentReference}</small>}
+                                {t.items?.length > 0
+                                  ? <strong className="cp-txn-item">{t.items[0].title || t.items[0].code}{t.items.length > 1 && <span className="cp-txn-more-items"> (+{t.items.length - 1})</span>}</strong>
+                                  : <span className="cp-td-muted">-</span>}
                               </td>
                               <td className="cp-td-muted">{t.date || '-'}{t.time && <small className="cp-course-schedule">{t.time}</small>}</td>
                               <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>

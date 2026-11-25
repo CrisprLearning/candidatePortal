@@ -6,6 +6,10 @@
 .cp-course-schedule { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; color: var(--muted); opacity: .85; }
 /* Transactions: one line per item bought; amounts right-aligned */
 .cp-txn-item { display: block; }
+.cp-txn-more-items { color: var(--muted); font-weight: 700; white-space: nowrap; }
+.cp-txn-row { cursor: pointer; }
+.cp-txn-row:hover td, .cp-txn-row:focus-visible td { background: var(--brand-soft); }
+.cp-txn-row:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 .cp-txn-amount { text-align: right; white-space: nowrap; }
 .cp-txn-more { display: flex; justify-content: center; margin-top: 14px; }
 .cp-profile-card { text-align: center; }
