@@ -409,9 +409,9 @@ export default function ProfilePage() {
                 </div>
                 {txns.list && txns.list.length > 0 && (
                   <div className="cp-table-wrap">
-                    <table className="cp-table" style={{ minWidth: 560 }}>
+                    <table className="cp-table" style={{ minWidth: 640 }}>
                       <thead>
-                        <tr><th>Order</th><th>Items</th><th>Date</th><th className="cp-txn-amount">Amount</th><th>Status</th></tr>
+                        <tr><th>Order</th><th>Items</th><th>Date</th><th>Payment</th><th className="cp-txn-amount">Amount</th><th>Status</th></tr>
                       </thead>
                       <tbody>
                         {txns.list.map((t) => {
@@ -434,6 +434,8 @@ export default function ProfilePage() {
                                   : <span className="cp-td-muted">-</span>}
                               </td>
                               <td className="cp-td-muted">{t.date || '-'}{t.time && <small className="cp-course-schedule">{t.time}</small>}</td>
+                              {/* Bought on an installment plan: the amount is the first payment, the rest is in the order's schedule. */}
+                              <td>{t.paymentMode === 'INSTALLMENTS' ? <Pill tone="sky" size="sm" title="Paid in installments: open the order to see the schedule">Installments</Pill> : <span className="cp-td-muted">Full</span>}</td>
                               <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>
                               <td><Pill tone={st.tone} size="sm" title={st.hint}>{st.label}</Pill></td>
                             </tr>

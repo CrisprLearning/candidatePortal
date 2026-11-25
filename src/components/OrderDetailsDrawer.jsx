@@ -17,6 +17,14 @@ const DELIVERY_STATUS = {
   cancelled: { label: 'Delivery cancelled', tone: 'orange' },
 };
 
+// One installment of an order bought on a payment plan (candidate_payments), as transactions.php reports it.
+const INSTALLMENT_STATUS = {
+  paid: { label: 'Paid', tone: 'lime' },
+  pending: { label: 'Due', tone: 'sky' },
+  overdue: { label: 'Overdue', tone: 'orange' },
+  failed: { label: 'Failed', tone: 'orange' },
+};
+
 export function rupees(paise) {
   const value = Number(paise) / 100;
   return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: value % 1 === 0 ? 0 : 2 })}`;
@@ -24,7 +32,8 @@ export function rupees(paise) {
 
 /**
  * Details of one order from My Transactions, in a drawer from the right:
- * every item, the amount break-up, the payment references and, for an order
+ * every item, the amount break-up, the payment references, the installment
+ * schedule of an item bought on a payment plan and, for an order
  * with books or merchandise, the delivery address and where the parcel is.
  * `order` is a row of transactions.php; null keeps the drawer closed.
  * Closes on Escape or a tap outside.
@@ -53,6 +62,15 @@ export default function OrderDetailsDrawer({ order, onClose }) {
   const addr = order.deliveryAddress;
   const delivery = order.delivery;
   const dst = delivery ? (DELIVERY_STATUS[delivery.status] || DELIVERY_STATUS.received) : null;
+  // The installments of a paid order, one group per item bought on a plan.
+  const onInstallments = order.paymentMode === 'INSTALLMENTS';
+  const schedule = Array.isArray(order.schedule) ? order.schedule : [];
+  const scheduleGroups = [];
+  schedule.forEach((row) => {
+    let group = scheduleGroups.find((g) => g.code === row.itemCode);
+    if (!group) { group = { code: row.itemCode, title: row.itemTitle, rows: [] }; scheduleGroups.push(group); }
+    group.rows.push(row);
+  });
   const cityLine = addr ? [addr.locality, addr.city].filter(Boolean).join(', ') : '';
   const stateLine = addr ? [addr.state, addr.pincode].filter(Boolean).join(' - ') : '';
 
@@ -84,7 +102,7 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                 <li key={i}>
                   <div>
                     <strong>{item.title || item.code}</strong>
-                    <small>{[item.type, item.number > 1 ? `${item.number} × ${rupees(item.unitPrice)}` : ''].filter(Boolean).join(' · ')}</small>
+                    <small>{[item.type, item.number > 1 ? `${item.number} × ${rupees(item.unitPrice)}` : '', item.paymentPlan === 'INSTALLMENT' ? 'Paid in installments' : ''].filter(Boolean).join(' · ')}</small>
                   </div>
                   <span>{rupees(item.unitPrice * (item.number || 1))}</span>
                 </li>
@@ -94,9 +112,43 @@ export default function OrderDetailsDrawer({ order, onClose }) {
               <div><dt>Subtotal</dt><dd>{rupees(order.subTotal)}</dd></div>
               {order.discount > 0 && <div><dt>Discount</dt><dd>- {rupees(order.discount)}</dd></div>}
               {order.extras > 0 && <div><dt>Taxes and charges</dt><dd>{rupees(order.extras)}</dd></div>}
-              <div className="is-total"><dt>Total</dt><dd>{rupees(order.amount)}</dd></div>
+              {order.payLater > 0 && <div><dt>To be paid in installments</dt><dd>- {rupees(order.payLater)}</dd></div>}
+              <div className="is-total"><dt>{onInstallments ? 'Paid now' : 'Total'}</dt><dd>{rupees(order.amount)}</dd></div>
             </dl>
           </section>
+
+          {onInstallments && (
+            <section className="cp-order-card">
+              <h3>Payment schedule</h3>
+              {scheduleGroups.length === 0 && (
+                <p className="cp-order-muted">
+                  {order.status === 'successful' ? 'The schedule for this order is not available yet.' : 'The installment schedule starts once the first payment is successful.'}
+                </p>
+              )}
+              {scheduleGroups.map((group) => (
+                <div className="cp-order-schedule" key={group.code}>
+                  {scheduleGroups.length > 1 && <h4>{group.title || group.code}</h4>}
+                  <ul className="cp-order-items">
+                    {group.rows.map((row) => {
+                      const ist = INSTALLMENT_STATUS[row.status] || INSTALLMENT_STATUS.pending;
+                      return (
+                        <li key={row.installmentNo}>
+                          <div>
+                            <strong>{row.label || `Installment ${row.installmentNo}`}</strong>
+                            <small>{row.status === 'paid' ? `Paid on ${row.paidOn || row.dueOn}` : `Due on ${row.dueOn}`}</small>
+                          </div>
+                          <span className="cp-order-schedule-amount">
+                            {rupees(row.amount)}
+                            <Pill tone={ist.tone} size="sm">{ist.label}</Pill>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          )}
 
           {order.hasProducts && (
             <section className="cp-order-card">
