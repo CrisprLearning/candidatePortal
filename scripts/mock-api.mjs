@@ -30,8 +30,8 @@ const profile = {
   email: 'aarav@example.com', idPhoto: '',
   offlineOnboarded: true,
   courses: [
-    { title: 'IAT 2026 Grand Test Series', type: 'Test Series', metadata: { commencement: 'Jun 2025', conclusion: 'May 2026' }, accessLevel: 'Premium', expiry: '31 May 2026' },
-    { title: 'IAT 2026 Booster Series', type: 'Test Series', accessLevel: 'Free', expiry: 'Unknown' },
+    { code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', metadata: { commencement: 'Jun 2025', conclusion: 'May 2026' }, accessLevel: 'Premium', expiry: '31 May 2026' },
+    { code: 'IAT26B', title: 'IAT 2026 Booster Series', type: 'Test Series', accessLevel: 'Free', expiry: 'Unknown' },
     { title: 'Class 12 Physics Video Course', type: 'Course', accessLevel: 'Free', expiry: 'Unknown' },
   ],
 };
@@ -175,6 +175,20 @@ const routes = {
     ] }] }],
   }),
   'POST /user/courses/save-course-progress.php': () => ok({}),
+  // Purchases, newest first; the `newuser` token has none. Two pages to exercise "Show more".
+  'GET /user/transactions.php': (_b, url, req) => {
+    if (isNewUser(req)) return ok({ transactions: [], page: 0, size: 20, hasMore: false });
+    const page = Number(new URL(url, 'http://x').searchParams.get('page')) || 0;
+    const first = [
+      { id: 1042, orderReference: '1042', status: 'pending', items: [{ code: 'NEST26', title: 'NEST 2026 Test Series', type: 'Test Series', unitPrice: 299900, number: 1 }], subTotal: 299900, discount: 0, extras: 53982, amount: 353882, gatewayOrder: 'order_Qx1', paymentReference: '', date: '25 Nov, 2026', time: '10:12 am', createdAt: 1795581720 },
+      { id: 1037, orderReference: '1037', status: 'failed', items: [{ code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', unitPrice: 499900, number: 1 }], subTotal: 499900, discount: 0, extras: 89982, amount: 589882, gatewayOrder: 'order_Qw7', paymentReference: '', date: '2 Jun, 2025', time: '6:40 pm', createdAt: 1748869800 },
+      { id: 1038, orderReference: '1038', status: 'successful', items: [{ code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', unitPrice: 499900, number: 1 }, { code: 'BK01', title: 'IAT Formula Handbook', type: '', unitPrice: 49900, number: 2 }], subTotal: 599700, discount: 50000, extras: 98946, amount: 648646, gatewayOrder: 'order_Qw9', paymentReference: 'pay_Qw9aB3', date: '2 Jun, 2025', time: '6:44 pm', createdAt: 1748870040 },
+    ];
+    const second = [
+      { id: 911, orderReference: '911', status: 'successful', items: [{ code: 'IATFREE', title: 'IAT Free Starter Mocks', type: 'Test Series', unitPrice: 0, number: 1 }], subTotal: 0, discount: 0, extras: 0, amount: 0, gatewayOrder: 'order_Pa1', paymentReference: 'pay_Pa1zz', date: '14 Mar, 2025', time: '9:05 am', createdAt: 1741923300 },
+    ];
+    return ok({ transactions: page === 0 ? first : second, page, size: 20, hasMore: page === 0 });
+  },
   'GET /user/get-billing-address.php': () => ok({ mobile: '9876543210', name: 'Aarav Menon', address: '', locality: '', city: 'Kochi', state: 'Kerala', pincode: '', email: 'aarav@example.com' }),
   'POST /public/courses.php': (_b, url) => {
     const catalog = [

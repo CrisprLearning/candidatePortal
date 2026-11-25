@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
 import Layout from '../components/Layout';
@@ -7,7 +8,7 @@ import { Avatar, Card, Pill } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useUser } from '../components/UserProvider';
 import { getSearchParam, replaceSearchParam, setSearchParam } from '../lib/browser';
-import { removeIdPhoto, updateProfile as saveProfileApi, uploadIdPhoto, uploadProfilePhoto } from '../lib/candidateApi';
+import { getCourseBundleProgress, getTestSeriesProgress, getTransactions, removeIdPhoto, updateProfile as saveProfileApi, uploadIdPhoto, uploadProfilePhoto } from '../lib/candidateApi';
 import { PLACES, buildProfilePayload, isOfflineStudent } from '../lib/profile';
 
 const STUDENT_PHOTO_WIDTH = 826;
@@ -16,9 +17,22 @@ const STUDENT_PHOTO_HEIGHT = 1062;
 const TABS = [
   { id: 1, label: (name) => `About ${name || ''}`, icon: Icon.User },
   { id: 2, label: () => 'Courses Enrolled', icon: Icon.List },
+  { id: 5, label: () => 'Transactions', icon: Icon.FileText }, // id 5: ?currentTab=3 and 4 were already taken
   { id: 3, label: () => 'Edit Details', icon: Icon.Pencil },
   { id: 4, label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
 ];
+
+// transactions.php statuses, as shown in the Transactions tab.
+const TXN_STATUS = {
+  successful: { label: 'Successful', tone: 'lime', hint: 'Payment received' },
+  pending: { label: 'Pending', tone: 'sky', hint: 'Payment not completed yet' },
+  failed: { label: 'Failed', tone: 'orange', hint: 'Payment was not completed' },
+};
+
+function rupees(paise) {
+  const value = Number(paise) / 100;
+  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: value % 1 === 0 ? 0 : 2 })}`;
+}
 
 function parentsNames(p = {}) {
   const mother = p.motherName || '';
@@ -144,6 +158,52 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile && !offline && activeTab === 4) { setActiveTab(1); replaceSearchParam('currentTab', 1); }
   }, [profile, offline, activeTab]);
+
+  // Each enrolled course links to its own page: /test-series?id=<series code>
+  // or /courses?id=<course id>. The profile's enrolment rows carry no code, so
+  // it is looked up by title in the candidate's series / course lists (a `code`
+  // on the row wins if the API sends one). Unmatched rows open the list page.
+  const [courseIds, setCourseIds] = useState({});
+  const hasSeries = (p.courses || []).some((c) => c?.type === 'Test Series');
+  const hasCourse = (p.courses || []).some((c) => c?.type && c.type !== 'Test Series');
+  useEffect(() => {
+    if (activeTab !== 2) return undefined;
+    let live = true;
+    const key = (type, title) => `${type}|${(title || '').trim().toLowerCase()}`;
+    const add = (type, list, idOf) => {
+      if (!live) return;
+      setCourseIds((prev) => {
+        const next = { ...prev };
+        (list || []).forEach((item) => { if (item?.title && idOf(item)) next[key(type, item.title)] = idOf(item); });
+        return next;
+      });
+    };
+    if (hasSeries) getTestSeriesProgress().then((d) => add('series', d?.testSeriesEnrolled, (t) => t.code)).catch(() => {});
+    if (hasCourse) getCourseBundleProgress().then((d) => add('course', d?.enrolledCourses, (b) => b.id)).catch(() => {});
+    return () => { live = false; };
+  }, [activeTab, hasSeries, hasCourse]);
+
+  function coursePath(course) {
+    const series = course.type === 'Test Series';
+    const base = series ? '/test-series' : '/courses';
+    const id = course.code || courseIds[`${series ? 'series' : 'course'}|${(course.title || '').trim().toLowerCase()}`];
+    return id ? `${base}?id=${encodeURIComponent(id)}` : base;
+  }
+
+  // Transactions tab: every purchase, loaded a page at a time when the tab is opened.
+  const [txns, setTxns] = useState({ list: null, page: 0, hasMore: false, loading: false, error: false });
+  function loadTransactions(page) {
+    setTxns((t) => ({ ...t, loading: true, error: false }));
+    getTransactions(page)
+      .then((d) => setTxns((t) => ({
+        list: page === 0 ? (d?.transactions || []) : [...(t.list || []), ...(d?.transactions || [])],
+        page, hasMore: !!d?.hasMore, loading: false, error: false,
+      })))
+      .catch(() => setTxns((t) => ({ ...t, loading: false, error: true })));
+  }
+  useEffect(() => {
+    if (activeTab === 5) loadTransactions(0);
+  }, [activeTab]);
 
   function changeActiveTab(id) {
     setSearchParam('currentTab', id);
@@ -320,9 +380,7 @@ export default function ProfilePage() {
                         <tr key={i}>
                           <td className="cp-td-muted">{i + 1}</td>
                           <td>
-                            {course.type === 'Test Series'
-                              ? <a className="cp-course-link" href="/test-series"><strong>{course.title}</strong></a>
-                              : <strong>{course.title}</strong>}
+                            <Link className="cp-course-link" to={coursePath(course)}><strong>{course.title}</strong></Link>
                             {course.metadata?.commencement && (
                               <small className="cp-course-schedule">{course.metadata.commencement} to {course.metadata.conclusion}</small>
                             )}
@@ -340,6 +398,58 @@ export default function ProfilePage() {
                   </table>
                 </div>
                 {(!p.courses || p.courses.length === 0) && <p className="cp-empty cp-foot-note">You are not enrolled in any course yet.</p>}
+              </Card>
+            )}
+
+            {activeTab === 5 && (
+              <Card>
+                <div className="cp-card-head">
+                  <h2>Transactions</h2>
+                  {txns.list && <Pill tone="ghost">{txns.list.length}{txns.hasMore ? '+' : ''} {txns.list.length === 1 && !txns.hasMore ? 'purchase' : 'purchases'}</Pill>}
+                </div>
+                {txns.list && txns.list.length > 0 && (
+                  <div className="cp-table-wrap">
+                    <table className="cp-table" style={{ minWidth: 560 }}>
+                      <thead>
+                        <tr><th>Order</th><th>Items</th><th>Date</th><th className="cp-txn-amount">Amount</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        {txns.list.map((t) => {
+                          const st = TXN_STATUS[t.status] || TXN_STATUS.failed;
+                          return (
+                            <tr key={t.id}>
+                              <td className="cp-td-muted">#{t.orderReference}</td>
+                              <td>
+                                {(t.items || []).map((item, i) => (
+                                  <strong key={i} className="cp-txn-item">{item.title || item.code}{item.number > 1 ? ` × ${item.number}` : ''}</strong>
+                                ))}
+                                {(!t.items || t.items.length === 0) && <span className="cp-td-muted">-</span>}
+                                {t.paymentReference && <small className="cp-course-schedule">Payment ID {t.paymentReference}</small>}
+                              </td>
+                              <td className="cp-td-muted">{t.date || '-'}{t.time && <small className="cp-course-schedule">{t.time}</small>}</td>
+                              <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>
+                              <td><Pill tone={st.tone} size="sm" title={st.hint}>{st.label}</Pill></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {txns.list && txns.list.length === 0 && <p className="cp-empty cp-foot-note">You have not made any purchase yet.</p>}
+                {!txns.list && txns.loading && <p className="cp-empty cp-foot-note">Loading your transactions…</p>}
+                {txns.error && (
+                  <p className="cp-empty cp-foot-note">
+                    Could not load your transactions. <button type="button" className="cp-btn cp-btn-ghost" onClick={() => loadTransactions(txns.list ? txns.page + 1 : 0)}>Try again</button>
+                  </p>
+                )}
+                {txns.list && txns.hasMore && !txns.error && (
+                  <div className="cp-txn-more">
+                    <button type="button" className="cp-btn cp-btn-ghost" disabled={txns.loading} onClick={() => loadTransactions(txns.page + 1)}>
+                      {txns.loading ? 'Loading…' : 'Show more'}
+                    </button>
+                  </div>
+                )}
               </Card>
             )}
 

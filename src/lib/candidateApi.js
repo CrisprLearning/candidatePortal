@@ -62,6 +62,11 @@ export async function removeIdPhoto() {
   return raw(await api.post('/user/remove-id-photo.php', {}));
 }
 
+// The candidate's purchases, newest first: successful, pending and failed. `page` is 0-based.
+export async function getTransactions(page = 0, size = 20) {
+  return unwrap(await api.get(`/user/transactions.php?page=${page}&size=${size}`));
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export async function getDashboardSummary() {
   return unwrap(await api.get('/user/dashboard-summary.php'));
