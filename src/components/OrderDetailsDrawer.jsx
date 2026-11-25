@@ -22,6 +22,7 @@ const DELIVERY_STATUS = {
 const INSTALLMENT_STATUS = {
   paid: { label: 'Paid', tone: 'lime' },
   scheduled: { label: 'Scheduled', tone: 'ghost' },
+  upcoming: { label: 'Upcoming', tone: 'ghost' }, // pending, due date not passed (transactions.php displayStatus)
   pending: { label: 'Pending', tone: 'sky' },
   overdue: { label: 'Overdue', tone: 'orange' },
   failed: { label: 'Failed', tone: 'orange' },
@@ -186,7 +187,8 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                   <h4>{group.title || group.code}</h4>
                   <ol className="cp-timeline">
                     {group.rows.map((row) => {
-                      const ist = INSTALLMENT_STATUS[row.status] || INSTALLMENT_STATUS.pending;
+                      // The API says what to show: displayStatus and its label.
+                      const ist = INSTALLMENT_STATUS[row.displayStatus || row.status] || INSTALLMENT_STATUS.pending;
                       const paid = row.status === 'paid';
                       return (
                         <li key={row.installmentNo} className={`is-${ist.tone}`}>
@@ -197,7 +199,7 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                           </div>
                           <span className="cp-timeline-amount">
                             {rupees(row.amount)}
-                            <Pill tone={ist.tone} size="sm">{ist.label}</Pill>
+                            <Pill tone={ist.tone} size="sm">{row.statusLabel || ist.label}</Pill>
                           </span>
                         </li>
                       );

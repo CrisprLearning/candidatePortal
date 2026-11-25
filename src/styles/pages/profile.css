@@ -18,6 +18,7 @@
 .cp-txn-row { cursor: pointer; }
 .cp-txn-row:hover td, .cp-txn-row:focus-visible td { background: var(--brand-soft); }
 .cp-txn-row:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.cp-txn-payment { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 .cp-txn-amount { text-align: right; white-space: nowrap; }
 .cp-txn-more { display: flex; justify-content: center; margin-top: 14px; }
 .cp-profile-card { text-align: center; }

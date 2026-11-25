@@ -68,6 +68,12 @@ export async function getTransactions(page = 0, { successfulOnly = false, size =
   return unwrap(await api.get(`/user/transactions.php?page=${page}&size=${size}${successfulOnly ? '&status=successful' : ''}`));
 }
 
+// One order of the candidate by its id (a row of getTransactions), or null when there is none.
+export async function getTransaction(orderId) {
+  const data = unwrap(await api.get(`/user/transactions.php?id=${encodeURIComponent(orderId)}`));
+  return data?.transactions?.[0] || null;
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export async function getDashboardSummary() {
   return unwrap(await api.get('/user/dashboard-summary.php'));

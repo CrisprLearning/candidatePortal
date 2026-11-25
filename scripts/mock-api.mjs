@@ -212,13 +212,16 @@ const routes = {
         { itemCode: 'CR0004', itemTitle: 'IAT 2026 - Exclusive 1 Year Course', installmentNo: 2, label: 'Installment 2', status: 'overdue', dueOn: '10 Nov, 2026', paidOn: '', amount: 750000 },
         { itemCode: 'CR0004', itemTitle: 'IAT 2026 - Exclusive 1 Year Course', installmentNo: 3, label: 'Installment 3', status: 'scheduled', dueOn: '10 Jan, 2027', paidOn: '', amount: 750000 },
         { itemCode: 'CR0010', itemTitle: 'IAT Crash Course', installmentNo: 1, label: 'At registration', status: 'paid', dueOn: '10 Sep, 2026', paidOn: '10 Sep, 2026', amount: 300000 },
-        { itemCode: 'CR0010', itemTitle: 'IAT Crash Course', installmentNo: 2, label: 'Before commencement', status: 'pending', dueOn: '30 Mar, 2027', paidOn: '', amount: 600000 },
+        { itemCode: 'CR0010', itemTitle: 'IAT Crash Course', installmentNo: 2, label: 'Before commencement', status: 'pending', displayStatus: 'upcoming', statusLabel: 'Upcoming', dueOn: '30 Mar, 2027', paidOn: '', amount: 600000 },
       ] },
       { id: 1038, orderReference: '1038', status: 'successful', items: [{ code: 'IAT26', title: 'IAT 2026 Grand Test Series', type: 'Test Series', unitPrice: 499900, number: 1 }, { code: 'BK01', title: 'IAT Formula Handbook', type: 'Book', unitPrice: 49900, number: 2 }, { code: 'BK02', title: 'Crispr Lab Notebook', type: 'Merchandise', unitPrice: 19900, number: 1 }], subTotal: 619600, discount: 50000, extras: 102528, amount: 672128, gatewayOrder: 'order_Qw9', paymentReference: 'pay_Qw9aB3', date: '2 Jun, 2025', time: '6:44 pm', createdAt: 1748870040, hasProducts: true, deliveryAddress: { name: 'Aarav Menon', mobile: '9876543210', email: 'aarav@example.com', address: '14B Green Meadows, MG Road', locality: 'Kadavanthra', city: 'Kochi', state: 'Kerala', pincode: '682020' }, delivery: { status: 'despatched', courier: 'DTDC', trackingNumber: 'D12345678', updatedOn: '4 Jun, 2025' } },
     ];
     const second = [
       { id: 911, orderReference: '911', status: 'successful', items: [{ code: 'IATFREE', title: 'IAT Free Starter Mocks', type: 'Test Series', unitPrice: 0, number: 1 }], subTotal: 0, discount: 0, extras: 0, amount: 0, gatewayOrder: 'order_Pa1', paymentReference: 'pay_Pa1zz', date: '14 Mar, 2025', time: '9:05 am', createdAt: 1741923300 },
     ];
+    // ?id=<order id>: that one order, whatever its status.
+    const onlyId = new URL(url, 'http://x').searchParams.get('id');
+    if (onlyId) return ok({ transactions: [...first, ...second].filter((t) => String(t.id) === onlyId), status: 'all', page: 0, size: 20, hasMore: false });
     // ?status=successful: paid orders only, as one page.
     if (new URL(url, 'http://x').searchParams.get('status') === 'successful') {
       return ok({ transactions: page === 0 ? [...first, ...second].filter((t) => t.status === 'successful') : [], status: 'successful', page, size: 20, hasMore: false });

@@ -9,7 +9,7 @@ import { useToast } from '../components/Toast';
 import { useUser } from '../components/UserProvider';
 import OrderDetailsDrawer, { TXN_STATUS, rupees } from '../components/OrderDetailsDrawer';
 import { getSearchParam, replaceSearchParam, setSearchParam } from '../lib/browser';
-import { getCourseBundleProgress, getTestSeriesProgress, getTransactions, removeIdPhoto, updateProfile as saveProfileApi, uploadIdPhoto, uploadProfilePhoto } from '../lib/candidateApi';
+import { getCourseBundleProgress, getTestSeriesProgress, getTransaction, getTransactions, removeIdPhoto, updateProfile as saveProfileApi, uploadIdPhoto, uploadProfilePhoto } from '../lib/candidateApi';
 import { PLACES, buildProfilePayload, isOfflineStudent } from '../lib/profile';
 
 const STUDENT_PHOTO_WIDTH = 826;
@@ -190,9 +190,37 @@ export default function ProfilePage() {
   // Transactions tab: every purchase, loaded a page at a time when the tab is opened.
   const [txns, setTxns] = useState({ list: null, page: 0, hasMore: false, loading: false, error: false });
   const [orderOpen, setOrderOpen] = useState(null); // the transaction shown in the order drawer
+  // The open order is kept in the URL: /profile?currentTab=5&orderId=<order id>
+  function openOrder(order) {
+    setOrderOpen(order);
+    replaceSearchParam('orderId', order ? order.id : null);
+  }
+  // A link to an order: fetched by its id, since it may not be in the listed page
+  // or may be hidden by "Show Successful Only".
+  useEffect(() => {
+    const orderId = getSearchParam('orderId');
+    if (activeTab !== 5 || !orderId) return undefined;
+    let live = true;
+    getTransaction(orderId)
+      .then((order) => {
+        if (!live) return;
+        if (order) setOrderOpen(order);
+        else { toast(`Order #${orderId} was not found`); replaceSearchParam('orderId', null); }
+      })
+      .catch(() => { if (live) toast('Could not open the order'); });
+    return () => { live = false; };
+  }, [activeTab]);
   // "Show Successful Only": on unless the candidate turned it off (remembered in localStorage).
   const [hideUnsuccessful, setHideUnsuccessful] = useState(readHideUnsuccessful);
   const txnRequest = useRef(0); // a reply to an older request (the toggle was flipped since) is dropped
+  // ?orderId= (the link checkout sends a buyer to after paying) opens that order's drawer, once, when the list arrives.
+  const orderFromLink = useRef(getSearchParam('orderId'));
+  useEffect(() => {
+    if (!orderFromLink.current || !txns.list) return;
+    const wanted = txns.list.find((t) => String(t.id) === orderFromLink.current || String(t.orderReference) === orderFromLink.current);
+    orderFromLink.current = null;
+    if (wanted) setOrderOpen(wanted);
+  }, [txns.list]);
   function loadTransactions(page, successfulOnly = hideUnsuccessful) {
     const seq = ++txnRequest.current;
     setTxns((t) => ({ ...t, loading: true, error: false }));
@@ -221,6 +249,7 @@ export default function ProfilePage() {
   const isTabActive = (id) => activeTab === id || (id === 1 && activeTab === 3);
 
   function changeActiveTab(id) {
+    replaceSearchParam('orderId', null); // an order link belongs to My Transactions only
     setSearchParam('currentTab', id);
     setActiveTab(id);
   }
@@ -423,7 +452,7 @@ export default function ProfilePage() {
 
             {activeTab === 5 && (
               <Card>
-                <OrderDetailsDrawer order={orderOpen} onClose={() => setOrderOpen(null)} />
+                <OrderDetailsDrawer order={orderOpen} onClose={() => openOrder(null)} />
                 <div className="cp-card-head">
                   <h2>My Transactions</h2>
                   <label className="cp-switch">
@@ -449,8 +478,8 @@ export default function ProfilePage() {
                               tabIndex={0}
                               role="button"
                               aria-label={`Order ${t.orderReference}: view details`}
-                              onClick={() => setOrderOpen(t)}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOrderOpen(t); } }}
+                              onClick={() => openOrder(t)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOrder(t); } }}
                             >
                               <td className="cp-td-muted">#{t.orderReference}</td>
                               <td>
@@ -460,7 +489,12 @@ export default function ProfilePage() {
                               </td>
                               <td className="cp-td-muted">{t.date || '-'}{t.time && <small className="cp-course-schedule">{t.time}</small>}</td>
                               {/* Bought on an installment plan: the amount is the first payment, the rest is in the order's schedule. */}
-                              <td>{t.paymentMode === 'INSTALLMENTS' ? <Pill tone="sky" size="sm" title="Paid in installments: open the order to see the schedule">Installments</Pill> : <span className="cp-td-muted">Full</span>}</td>
+                              {/* Plain text, not a chip. An order that was never paid is not "Completely Paid". */}
+                              <td className="cp-txn-payment">
+                                {t.paymentMode === 'INSTALLMENTS'
+                                  ? <span title="Open the order to see the payment schedule">Opted for Instalments</span>
+                                  : (t.status === 'successful' ? 'Completely Paid' : <span className="cp-td-muted">-</span>)}
+                              </td>
                               <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>
                               <td><Pill tone={st.tone} size="sm" title={st.hint}>{st.label}</Pill></td>
                             </tr>
