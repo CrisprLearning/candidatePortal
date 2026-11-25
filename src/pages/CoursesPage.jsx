@@ -10,6 +10,7 @@ import { getSearchParam, replaceSearchParam } from '../lib/browser';
 import WatchHistory from '../components/WatchHistory';
 import CatalogBanner, { CATALOG_URL, useCatalogStripClosed } from '../components/CatalogBanner';
 import CatalogSeries from '../components/CatalogSeries';
+import UpcomingCoursesBanner from '../components/UpcomingCoursesBanner';
 import { getWatchHistory, playerCourseIds } from '../lib/watchHistory';
 
 /**
@@ -128,15 +129,7 @@ export default function CoursesPage() {
     <Layout title="Courses" hideTitle>
       <div className="cp-page">
         {/* Paid for, not enrolled yet: the course is still to commence. */}
-        {upcoming.map((c) => (
-          <div key={c.code} className="cp-upcoming-strip" role="status">
-            <span className="cp-upcoming-strip-icon"><Icon.Calendar width={16} height={16} /></span>
-            <span>
-              You're registered for <b>{c.code} - {c.title}</b>.{' '}
-              {c.commencement && !c.commenced ? <>Classes begin on <b>{c.commencement}</b>.</> : <>Classes will begin soon.</>} Stay tuned!
-            </span>
-          </div>
-        ))}
+        <UpcomingCoursesBanner courses={upcoming} />
 
         {/* Already enrolled: a slim reminder that there is more in the catalog. */}
         {bundles?.length > 0 && <CatalogBanner compact closed={stripClosed} onClose={closeStrip} />}

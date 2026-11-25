@@ -120,6 +120,8 @@ const routes = {
   // Paid, not enrolled yet (banner on /courses); the new user has none.
   'GET /user/upcoming-courses.php': (_b, _u, req) => ok({ courses: isNewUser(req) ? [] : [
     { code: 'CR0010', title: 'IAT Crash Course', commencement: '30 March, 2027', commencementEpoch: 1806345000, commenced: false, orderReference: '1038' },
+    { code: 'CR0011', title: 'NEET Repeaters Batch', commencement: '12 April, 2027', commencementEpoch: 1807468200, commenced: false, orderReference: '1040' },
+    { code: 'CR0012', title: 'JAM Biotechnology', commencement: '', commencementEpoch: null, commenced: false, orderReference: '911' },
   ] }),
   'GET /user/course-bundle-progress.php': (_b, _u, req) => (isNewUser(req) ? ok({ enrolledCourses: [], coursesMetadata: {} }) : ok({
     enrolledCourses: [{ id: 1, title: 'Class 12 Physics Video Course' }, { id: 2, title: 'Class 11 Chemistry Video Course' }],

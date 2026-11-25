@@ -56,6 +56,15 @@
 }
 .cp-upcoming-strip b { font-weight: 800; }
 .cp-upcoming-strip-icon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; background: var(--brand); color: #fff; }
+/* Several upcoming courses: one strip, the messages sliding sideways inside it */
+.cp-upcoming-viewport { flex: 1; min-width: 0; overflow: hidden; }
+.cp-upcoming-track { display: flex; transition: transform .45s ease; }
+.cp-upcoming-slide { flex: 0 0 100%; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.cp-upcoming-dots { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.cp-upcoming-dots button { width: 18px; height: 18px; padding: 0; border: none; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.cp-upcoming-dots button::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); opacity: .3; transition: opacity .2s, transform .2s; }
+.cp-upcoming-dots button.is-active::before { opacity: 1; transform: scale(1.25); }
+@media (prefers-reduced-motion: reduce) { .cp-upcoming-track { transition: none; } }
 .cp-catalog-strip-close { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--warn-ink); display: grid; place-items: center; cursor: pointer; flex-shrink: 0; opacity: .7; }
 .cp-catalog-strip-close:hover { background: rgba(74, 48, 0, .12); opacity: 1; }
 .cp-catalog-strip-icon { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; background: var(--warn); color: var(--warn-ink); }

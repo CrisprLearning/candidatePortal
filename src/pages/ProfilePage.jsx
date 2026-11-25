@@ -16,13 +16,23 @@ const STUDENT_PHOTO_WIDTH = 826;
 const STUDENT_PHOTO_HEIGHT = 1062;
 
 const TABS = [
-  { id: 1, label: (name) => `About ${name || ''}`, icon: Icon.User },
-  { id: 2, label: () => 'Courses Enrolled', icon: Icon.List },
-  { id: 5, label: () => 'My Transactions', icon: Icon.FileText }, // id 5: ?currentTab=3 and 4 were already taken
-  // Edit Details (?currentTab=3) is not in the side panel: it opens from "Update Profile" on the About card.
-  { id: 3, label: () => 'Edit Details', icon: Icon.Pencil, hidden: true },
-  { id: 4, label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
+  // `slug` is the tab's name in the URL: /profile?tab=<slug>. `id` is the number
+  // the old links used (/profile?currentTab=<id>), which still open the same tab.
+  { id: 1, slug: 'about', label: (name) => `About ${name || ''}`, icon: Icon.User },
+  { id: 2, slug: 'enrolled', label: () => 'Courses Enrolled', icon: Icon.List },
+  { id: 5, slug: 'transactions', label: () => 'My Transactions', icon: Icon.FileText },
+  // Edit Details is not in the side panel: it opens from "Update Profile" on the About card.
+  { id: 3, slug: 'edit', label: () => 'Edit Details', icon: Icon.Pencil, hidden: true },
+  { id: 4, slug: 'id-card', label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
 ];
+const slugOf = (id) => TABS.find((t) => t.id === id)?.slug || 'about';
+
+// The tab the URL asks for: ?tab=<slug>, or the number of an old ?currentTab= link. About otherwise.
+function tabFromUrl() {
+  const slug = String(getSearchParam('tab') || '').toLowerCase();
+  const legacy = parseInt(getSearchParam('currentTab'), 10);
+  return (TABS.find((t) => t.slug === slug) || TABS.find((t) => t.id === legacy) || TABS[0]).id;
+}
 
 // My Transactions: whether pending and failed orders are hidden. Hidden unless
 // the candidate chose to see them ('0' in localStorage).
@@ -145,15 +155,21 @@ export default function ProfilePage() {
   const toast = useToast();
   const { profile, updateProfile } = useUser() || {};
   const p = profile || {};
-  const [activeTab, setActiveTab] = useState(() => parseInt(getSearchParam('currentTab'), 10) || 1);
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [photoOpen, setPhotoOpen] = useState(false);
   const [idPhotoOpen, setIdPhotoOpen] = useState(false);
 
   // The ID-card photo is for offline (classroom) students: `offlineOnboarded`.
   const offline = isOfflineStudent(profile);
   const tabs = TABS.filter((t) => !t.hidden && (!t.offlineOnly || offline));
+  // An old ?currentTab=<number> link is rewritten to its ?tab=<name> form.
   useEffect(() => {
-    if (profile && !offline && activeTab === 4) { setActiveTab(1); replaceSearchParam('currentTab', 1); }
+    if (getSearchParam('currentTab') === null) return;
+    replaceSearchParam('currentTab', null);
+    replaceSearchParam('tab', slugOf(activeTab));
+  }, []);
+  useEffect(() => {
+    if (profile && !offline && activeTab === 4) { setActiveTab(1); replaceSearchParam('tab', slugOf(1)); }
   }, [profile, offline, activeTab]);
 
   // Each enrolled course links to its own page: /test-series?id=<series code>
@@ -190,7 +206,7 @@ export default function ProfilePage() {
   // Transactions tab: every purchase, loaded a page at a time when the tab is opened.
   const [txns, setTxns] = useState({ list: null, page: 0, hasMore: false, loading: false, error: false });
   const [orderOpen, setOrderOpen] = useState(null); // the transaction shown in the order drawer
-  // The open order is kept in the URL: /profile?currentTab=5&orderId=<order id>
+  // The open order is kept in the URL: /profile?tab=transactions&orderId=<order id>
   function openOrder(order) {
     setOrderOpen(order);
     replaceSearchParam('orderId', order ? order.id : null);
@@ -250,7 +266,7 @@ export default function ProfilePage() {
 
   function changeActiveTab(id) {
     replaceSearchParam('orderId', null); // an order link belongs to My Transactions only
-    setSearchParam('currentTab', id);
+    setSearchParam('tab', slugOf(id));
     setActiveTab(id);
   }
 
@@ -465,7 +481,7 @@ export default function ProfilePage() {
                   <div className="cp-table-wrap">
                     <table className="cp-table" style={{ minWidth: 640 }}>
                       <thead>
-                        <tr><th>Order</th><th>Items</th><th>Date</th><th>Payment</th><th className="cp-txn-amount">Amount</th><th>Status</th></tr>
+                        <tr><th>Order</th><th>Items</th><th>Date</th><th>Payment Plan</th><th className="cp-txn-amount">Amount</th><th>Status</th></tr>
                       </thead>
                       <tbody>
                         {txns.list.map((t) => {
@@ -489,11 +505,11 @@ export default function ProfilePage() {
                               </td>
                               <td className="cp-td-muted">{t.date || '-'}{t.time && <small className="cp-course-schedule">{t.time}</small>}</td>
                               {/* Bought on an installment plan: the amount is the first payment, the rest is in the order's schedule. */}
-                              {/* Plain text, not a chip. An order that was never paid is not "Completely Paid". */}
+                              {/* Plain text, not a chip. An order that was never paid is not "Fully Paid". */}
                               <td className="cp-txn-payment">
                                 {t.paymentMode === 'INSTALLMENTS'
-                                  ? <span title="Open the order to see the payment schedule">Opted for Instalments</span>
-                                  : (t.status === 'successful' ? 'Completely Paid' : <span className="cp-td-muted">-</span>)}
+                                  ? <span title="Open the order to see the payment schedule">Installments</span>
+                                  : (t.status === 'successful' ? 'Fully Paid' : <span className="cp-td-muted">-</span>)}
                               </td>
                               <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>
                               <td><Pill tone={st.tone} size="sm" title={st.hint}>{st.label}</Pill></td>
