@@ -17,8 +17,9 @@ const STUDENT_PHOTO_HEIGHT = 1062;
 const TABS = [
   { id: 1, label: (name) => `About ${name || ''}`, icon: Icon.User },
   { id: 2, label: () => 'Courses Enrolled', icon: Icon.List },
-  { id: 5, label: () => 'Transactions', icon: Icon.FileText }, // id 5: ?currentTab=3 and 4 were already taken
-  { id: 3, label: () => 'Edit Details', icon: Icon.Pencil },
+  { id: 5, label: () => 'My Transactions', icon: Icon.FileText }, // id 5: ?currentTab=3 and 4 were already taken
+  // Edit Details (?currentTab=3) is not in the side panel: it opens from "Update Profile" on the About card.
+  { id: 3, label: () => 'Edit Details', icon: Icon.Pencil, hidden: true },
   { id: 4, label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
 ];
 
@@ -154,7 +155,7 @@ export default function ProfilePage() {
 
   // The ID-card photo is for offline (classroom) students: `offlineOnboarded`.
   const offline = isOfflineStudent(profile);
-  const tabs = TABS.filter((t) => !t.offlineOnly || offline);
+  const tabs = TABS.filter((t) => !t.hidden && (!t.offlineOnly || offline));
   useEffect(() => {
     if (profile && !offline && activeTab === 4) { setActiveTab(1); replaceSearchParam('currentTab', 1); }
   }, [profile, offline, activeTab]);
@@ -204,6 +205,9 @@ export default function ProfilePage() {
   useEffect(() => {
     if (activeTab === 5) loadTransactions(0);
   }, [activeTab]);
+
+  // Edit Details belongs to the About tab, so About stays highlighted while editing.
+  const isTabActive = (id) => activeTab === id || (id === 1 && activeTab === 3);
 
   function changeActiveTab(id) {
     setSearchParam('currentTab', id);
@@ -308,7 +312,7 @@ export default function ProfilePage() {
 
               <div className="cp-profile-nav" role="tablist">
                 {tabs.map(({ id, label, icon: Ico }) => (
-                  <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={`list-group-item ${activeTab === id ? 'active' : ''}`} onClick={() => changeActiveTab(id)}>
+                  <button key={id} type="button" role="tab" aria-selected={isTabActive(id)} className={`list-group-item ${isTabActive(id) ? 'active' : ''}`} onClick={() => changeActiveTab(id)}>
                     <Ico width={18} height={18} /> {label(p.name)}
                     {id === 2 && <span className="badge">{p.courses?.length || 0}</span>}
                   </button>
@@ -320,7 +324,12 @@ export default function ProfilePage() {
           <div>
             {activeTab === 1 && (
               <Card>
-                <div className="cp-card-head"><h2>About {p.name}</h2></div>
+                <div className="cp-card-head">
+                  <h2>About {p.name}</h2>
+                  <button type="button" className="cp-btn cp-btn-ghost" onClick={() => changeActiveTab(3)}>
+                    <Icon.Pencil width={15} height={15} /> Update Profile
+                  </button>
+                </div>
                 {p.about ? (
                   <figure className="cp-about-quote">
                     <span className="cp-about-quote-mark" aria-hidden="true">&ldquo;</span>
@@ -404,7 +413,7 @@ export default function ProfilePage() {
             {activeTab === 5 && (
               <Card>
                 <div className="cp-card-head">
-                  <h2>Transactions</h2>
+                  <h2>My Transactions</h2>
                   {txns.list && <Pill tone="ghost">{txns.list.length}{txns.hasMore ? '+' : ''} {txns.list.length === 1 && !txns.hasMore ? 'purchase' : 'purchases'}</Pill>}
                 </div>
                 {txns.list && txns.list.length > 0 && (
@@ -460,6 +469,9 @@ export default function ProfilePage() {
                     <h2>Edit Details</h2>
                     <p>Keep your details up to date so we can reach you about exams and results.</p>
                   </div>
+                  <button type="button" className="cp-btn cp-btn-ghost" onClick={() => changeActiveTab(1)}>
+                    <Icon.ChevronLeft width={15} height={15} /> Back
+                  </button>
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); saveProfile(); }}>
                   <div className="cp-form-grid">
