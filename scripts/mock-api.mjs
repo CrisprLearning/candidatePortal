@@ -94,7 +94,6 @@ const routes = {
   ]),
   'POST /user/authenticate.php': () => ok('demo-key', { message: 'OTP sent to +91 98XXXXXX10' }),
   'POST /user/login.php': (body) => (body.passcode === '1234' ? ok('demo-token') : { status: 'error', error: 'Incorrect OTP' }),
-  'GET /user/get-billing-address.php': () => ok({ mobile: '9876543210', name: 'Aarav Menon', address: '', locality: '', city: 'Kochi', state: 'Kerala', pincode: '', email: '' }),
   'GET /user/user-profile.php': (_b, _u, req) => ok(isNewUser(req) ? newUserProfile : profile),
   'POST /user/update-profile.php': (body, _u, req) => { if (isNewUser(req)) newUserProfile = { ...newUserProfile, ...body }; return ok({}); },
   'POST /user/upload-profile-photo.php': (body) => ok(body.photo),
