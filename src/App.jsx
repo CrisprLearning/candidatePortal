@@ -8,10 +8,11 @@ import CoursesPage from './pages/CoursesPage';
 import { isAuthenticated } from './lib/auth';
 import { START_PATH } from './lib/api';
 import { LEGACY_ROUTES } from './lib/legacyRoutes';
+import { CHECKOUT_CART_URL } from './lib/checkout';
 import { hasAnyEnrolment, hasCourseEnrolment, isOfflineStudent } from './lib/profile';
 
 // The two landing pages (login, courses) ship in the main bundle; every other
-// page is its own chunk, so charts, the photo cropper and the checkout only
+// page is its own chunk, so charts and the photo cropper only
 // download when they are needed. Once the first page is up, the remaining
 // chunks are fetched in the background so moving between pages stays instant.
 const PAGES = {
@@ -23,7 +24,6 @@ const PAGES = {
   ReportPage: () => import('./pages/ReportPage'),
   RevisitPage: () => import('./pages/RevisitPage'),
   CoursePage: () => import('./pages/CoursePage'),
-  CheckoutPage: () => import('./pages/CheckoutPage'),
 };
 const PerformancePage = lazy(PAGES.PerformancePage);
 const TestSeriesPage = lazy(PAGES.TestSeriesPage);
@@ -33,7 +33,6 @@ const ProfilePage = lazy(PAGES.ProfilePage);
 const ReportPage = lazy(PAGES.ReportPage);
 const RevisitPage = lazy(PAGES.RevisitPage);
 const CoursePage = lazy(PAGES.CoursePage);
-const CheckoutPage = lazy(PAGES.CheckoutPage);
 
 function usePreloadPages() {
   useEffect(() => {
@@ -91,6 +90,13 @@ function LegacyRedirect({ to }) {
   return <Navigate to={`${to}${location.search}`} replace />;
 }
 
+// /checkout?addItem=<code> (and the older /secure-checkout/checkout.html) now live on
+// the secure checkout site; the query string goes along.
+function CheckoutRedirect() {
+  useEffect(() => { window.location.replace(`${CHECKOUT_CART_URL}${window.location.search}`); }, []);
+  return null;
+}
+
 export default function App() {
   usePreloadPages();
   return (
@@ -111,7 +117,8 @@ export default function App() {
           <Route path="/revisit" element={<Protected><RevisitPage variant="exam" /></Protected>} />
           <Route path="/weekly-revisit" element={<Protected><RevisitPage variant="weekly" /></Protected>} />
           <Route path="/course" element={<CoursePage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          {/* The portal's own checkout page is gone: old links to it go to the secure checkout site. */}
+          <Route path="/checkout" element={<CheckoutRedirect />} />
           <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
         </Routes>
       </Suspense>

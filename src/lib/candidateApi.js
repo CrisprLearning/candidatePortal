@@ -210,29 +210,9 @@ export async function getWatchHistoryRows(courseIds, size) {
   return Array.isArray(data) ? data : [];
 }
 
-// ── Checkout ──────────────────────────────────────────────────────────────
-export async function getBillingAddress() {
-  return raw(await api.get('/user/get-billing-address.php'));
-}
-
+// ── Catalog ──────────────────────────────────────────────────────────────
 // Every active catalog item: [{ code, type: 'Course' | 'Test Series', title, brief, photo, originalPrice, sellingPrice (paise), … }]
 export async function listCatalog() {
   const res = raw(await api.post('/public/courses.php'));
   return Array.isArray(res?.data) ? res.data : [];
-}
-
-export async function lookupCourse(code) {
-  return raw(await api.post(`/public/courses.php?code=${encodeURIComponent(code)}`));
-}
-
-export async function validateCart({ cart, code }) {
-  return raw(await api.post('/user/checkout/validate-user-cart.php', { cart, code }));
-}
-
-export async function processPurchase(payload) {
-  return raw(await api.post('/user/checkout/process-purchase.php', payload));
-}
-
-export async function acknowledgePurchase(payload) {
-  return raw(await api.post('/user/checkout/acknowledge-purchase.php', payload));
 }

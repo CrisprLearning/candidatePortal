@@ -2,7 +2,7 @@
   "name": "crispr-candidate-portal",
   "version": "2.0.0",
   "private": true,
-  "description": "Crispr Learning candidate portal — mobile-first React SPA for students: dashboard, test series, weekly exams, reports, profile, course player and checkout",
+  "description": "Crispr Learning candidate portal — mobile-first React SPA for students: dashboard, test series, weekly exams, reports, profile and course player",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

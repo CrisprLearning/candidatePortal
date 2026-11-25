@@ -230,7 +230,6 @@ const routes = {
     }
     return ok({ transactions: page === 0 ? first : second, status: 'all', page, size: 20, hasMore: page === 0 });
   },
-  'GET /user/get-billing-address.php': () => ok({ mobile: '9876543210', name: 'Aarav Menon', address: '', locality: '', city: 'Kochi', state: 'Kerala', pincode: '', email: 'aarav@example.com' }),
   'POST /public/courses.php': (_b, url) => {
     const catalog = [
       { code: 'IAT26', type: 'Test Series', title: 'IAT 2026 Grand Test Series', brief: '20 full-length mocks', photo: IMG('cat1'), isDiscountApplicable: true, originalPrice: 699900, sellingPrice: 499900 },
@@ -243,12 +242,6 @@ const routes = {
     if (!code) return ok(catalog);
     return ok(catalog.find((c) => c.code === code) || { code, title: 'IAT 2026 Grand Test Series', type: 'Test Series', sellingPrice: 499900 });
   },
-  'POST /user/checkout/validate-user-cart.php': (body) => ok({
-    cart: body.cart,
-    summary: { subTotal: body.cart.reduce((s, i) => s + i.unitPrice * i.number, 0), discount: { amount: body.code ? 50000 : 0, code: body.code }, taxes: [{ label: 'GST 18%', value: 89982 }], extras: [], totalPayable: 589882 },
-  }),
-  'POST /user/checkout/process-purchase.php': () => ({ status: 'error', error: 'Payments are disabled in the mock API' }),
-  'POST /user/checkout/acknowledge-purchase.php': () => ok({}),
 };
 
 createServer((req, res) => {

@@ -5,9 +5,9 @@
    colours, Plus Jakarta Sans. Mirrors the parent portal (herosPortal).
 
    This file is only the index. The order below is the cascade order, so keep
-   responsive.css last. The course player and the checkout are scoped pages
-   whose CSS is imported by the page component itself (pages/course-player.css,
-   pages/checkout.css) and ships with that page's lazy chunk.
+   responsive.css last. The course player is a scoped page whose CSS is
+   imported by the page component itself (pages/course-player.css) and ships
+   with that page's lazy chunk.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @import './base/tokens.css';

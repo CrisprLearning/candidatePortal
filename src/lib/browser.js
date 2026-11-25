@@ -13,7 +13,7 @@ export function browserFingerprint() {
   };
 }
 
-// Load a classic script once (Razorpay checkout, Bunny player.js).
+// Load a classic script once (Bunny player.js).
 const loaded = new Map();
 export function loadScript(src) {
   if (loaded.has(src)) return loaded.get(src);

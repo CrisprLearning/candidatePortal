@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from './Icons';
 import { listCatalog } from '../lib/candidateApi';
 import { useUser } from './UserProvider';
+import { checkoutUrl } from '../lib/checkout';
 
 const norm = (v) => String(v || '').trim().toLowerCase();
 
@@ -22,7 +23,7 @@ function Thumb({ src }) {
 
 /**
  * Test series available in the catalog. A series the candidate already has
- * opens it; any other goes to the checkout with that series in the cart.
+ * opens it; any other goes to the secure checkout site with that series in the cart.
  *   layout "strip" (default): a row of tiles that scrolls sideways, with a heading.
  *   layout "grid": tiles wrap to fill the width (used inside the "Explore all"
  *   popup), no heading, and a note instead of nothing when the catalog is empty.
@@ -64,12 +65,15 @@ export default function CatalogSeries({ layout = 'strip', onNavigate, onOpen }) 
           const enrolled = owned.has(norm(s.title));
           const free = Number(s.sellingPrice) === 0;
           const cut = s.isDiscountApplicable && Number(s.originalPrice) > Number(s.sellingPrice);
+          // Enrolled: a page of this portal. Otherwise the secure checkout, which is another site.
+          const Tile = enrolled ? Link : 'a';
+          const target = enrolled ? { to: `/test-series?id=${encodeURIComponent(s.code)}` } : { href: checkoutUrl(s.code) };
           return (
-            <Link
+            <Tile
               key={s.code}
               className="cp-series-tile"
               onClick={(e) => { if (enrolled && onOpen) { e.preventDefault(); onOpen(s.code); } onNavigate?.(); }}
-              to={enrolled ? `/test-series?id=${encodeURIComponent(s.code)}` : `/checkout?addItem=${encodeURIComponent(s.code)}`}
+              {...target}
             >
               <Thumb src={s.photo} />
               <strong className="cp-series-tile-title">{s.title}</strong>
@@ -79,7 +83,7 @@ export default function CatalogSeries({ layout = 'strip', onNavigate, onOpen }) 
                   : <span className="cp-series-tile-price">{free ? 'Free' : rupees(s.sellingPrice)}{cut && <s>{rupees(s.originalPrice)}</s>}</span>}
                 <span className="cp-series-tile-cta">{enrolled ? 'Open' : 'Enroll'} <Icon.ChevronRight width={12} height={12} /></span>
               </span>
-            </Link>
+            </Tile>
           );
         })}
       </div>

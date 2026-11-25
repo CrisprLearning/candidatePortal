@@ -2,7 +2,7 @@ import axios from 'axios';
 import { clearToken, getToken } from './auth';
 
 // The candidate APIs are the PHP scripts under CrisprTechApp/crispr-apis
-// (user/*.php, user/quiz/*.php, user/checkout/*.php, public/*.php).
+// (user/*.php, user/quiz/*.php, public/*.php).
 // VITE_API_BASE overrides the origin + prefix; production is the default so
 // the deployed portal behaves exactly like the previous pages did.
 const ENV_API_BASE = import.meta.env?.VITE_API_BASE;
@@ -26,12 +26,11 @@ export const START_PATH = '/start';
 
 // The session is gone (no token, or the API answered 401): drop it and send
 // the candidate to the start page, remembering where they were so login can
-// bring them back. The checkout page has its own sign-in, so it only loses
-// the token and stays put.
+// bring them back.
 export function handleUnauthorized() {
   clearToken();
   const { pathname, search } = window.location;
-  if (pathname === START_PATH || pathname === '/checkout' || pathname.startsWith('/secure-checkout/')) return;
+  if (pathname === START_PATH) return;
   window.location.replace(`${START_PATH}?next=${encodeURIComponent(pathname + search)}`);
 }
 

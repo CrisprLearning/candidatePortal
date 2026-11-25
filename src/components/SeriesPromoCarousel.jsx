@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Icon } from './Icons';
 import { listCatalog } from '../lib/candidateApi';
 import { useUser } from './UserProvider';
+import { checkoutUrl } from '../lib/checkout';
 
 const norm = (v) => String(v || '').trim().toLowerCase();
 const ROTATE_MS = 5000;
@@ -16,7 +16,7 @@ function rupees(paise) {
  * Sales carousel on /test-series: the catalog's test series the candidate does
  * not have yet, one bold slide at a time, rotating every few seconds. Rotation
  * pauses while hovered or focused and is off when the OS asks for reduced
- * motion. Each slide's button puts that series in the checkout cart.
+ * motion. Each slide's button opens the secure checkout site with that series in the cart.
  *
  * exclude: series code(s) never to show (the one open on the page).
  */
@@ -110,9 +110,9 @@ export default function SeriesPromoCarousel({ exclude = [] }) {
                     <strong>{free ? 'Free' : rupees(s.sellingPrice)}</strong>
                     {cut && <s>{rupees(s.originalPrice)}</s>}
                   </span>
-                  <Link className="cp-promo-cta" to={`/checkout?addItem=${encodeURIComponent(s.code)}`} tabIndex={i === index ? 0 : -1}>
+                  <a className="cp-promo-cta" href={checkoutUrl(s.code)} tabIndex={i === index ? 0 : -1}>
                     {free ? 'Get it free' : 'Enroll now'} <Icon.ChevronRight width={15} height={15} />
-                  </Link>
+                  </a>
                 </div>
               </article>
             );

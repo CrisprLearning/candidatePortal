@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { checkoutUrl } from '../lib/checkout';
 import Layout from '../components/Layout';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExploreSeriesDialog from '../components/ExploreSeriesDialog';
@@ -130,7 +131,7 @@ export default function TestSeriesPage() {
     }
   }, [toast]);
 
-  // Locked (premium) exams ask before leaving for the checkout.
+  // Locked (premium) exams ask before leaving for the secure checkout site.
   const askPremium = useCallback((testSeriesCode) => setPremiumFor(testSeriesCode), []);
 
   // Hand-off, step by step:
@@ -210,7 +211,7 @@ export default function TestSeriesPage() {
         message="You need to have premium access to this exam to attempt it. Do you want to continue?"
         confirmLabel="Continue"
         cancelLabel="Not now"
-        onConfirm={() => { const code = premiumFor; setPremiumFor(null); navigate(`/checkout?addItem=${code}`); }}
+        onConfirm={() => { const code = premiumFor; setPremiumFor(null); window.location.assign(checkoutUrl(code)); }}
         onCancel={() => setPremiumFor(null)}
       />
 
