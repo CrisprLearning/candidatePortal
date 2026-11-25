@@ -5,6 +5,7 @@ import { Icon } from '../components/Icons';
 import { Card, Pill } from '../components/ui';
 import { useToast } from '../components/Toast';
 import SecretKeyDialog from '../components/SecretKeyDialog';
+import AttemptHistoryDrawer from '../components/AttemptHistoryDrawer';
 import { browserFingerprint } from '../lib/browser';
 import { getCourseBundleProgress, getTestSeriesProgress, listWeeklyExams, startWeeklyExam } from '../lib/candidateApi';
 
@@ -29,6 +30,7 @@ export default function QuizzesPage() {
     });
   }, []);
 
+  const [historyOpen, setHistoryOpen] = useState(false); // "Previous Attempts" drawer
   const [lockedQuiz, setLockedQuiz] = useState(null); // { url } of a started quiz waiting for its Exam Start Key
 
   // Where the exam runs: the API's url plus its metadata, and the Exam Start
@@ -66,7 +68,15 @@ export default function QuizzesPage() {
   const list = access ? exams || [] : [];
 
   return (
-    <Layout title="Quizzes">
+    <Layout
+      title="Quizzes"
+      actions={(
+        <button type="button" className="cp-btn cp-btn-ghost cp-btn-sm" onClick={() => setHistoryOpen(true)}>
+          <Icon.Clock width={15} height={15} /> Previous Attempts
+        </button>
+      )}
+    >
+      <AttemptHistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} />
       <SecretKeyDialog
         open={lockedQuiz !== null}
         title="Enter the Exam Start Key"

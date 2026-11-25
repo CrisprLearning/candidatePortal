@@ -134,6 +134,22 @@ const routes = {
     { id: 1, title: 'Weekly Test 12 · Organic Chemistry', brief: 'Reactions of alcohols, phenols and ethers.', photo: IMG('a', 400, 200), duration: 45, totalQuestions: 30, attempted: true },
     { id: 3, title: 'Weekly Test 11 · Thermodynamics', brief: 'Laws of thermodynamics, enthalpy and entropy.', photo: IMG('c', 400, 200), duration: 45, totalQuestions: 30, attempted: true },
   ]),
+  // "Previous Attempts" drawer on /quizzes; the `newuser` token has none. Two pages to exercise "Show more".
+  'GET /user/quiz/attempt-history.php': (_b, url, req) => {
+    if (isNewUser(req)) return ok({ attempts: [], page: 0, size: 20, hasMore: false });
+    const page = Number(url.searchParams.get('page')) || 0;
+    const first = [
+      { attemptId: 200531, quizId: 8, title: 'Weekly Test 18 · Chemical Bonding', dateOfExam: '4:30 pm, 22 Nov, 2026', examEpoch: 1795345200, reportReady: false, score: null, accuracy: null, maxScore: 120, classAverage: 61.4, topScore: 108, classStrength: 64 },
+      { attemptId: 200527, quizId: 5, title: 'Weekly Test 15 · Electrostatics', dateOfExam: '4:30 pm, 15 Nov, 2026', examEpoch: 1794740400, reportReady: true, score: 104, accuracy: 78.5, maxScore: 120, classAverage: 94.8, topScore: 116, classStrength: 70 },
+      { attemptId: 200410, quizId: 4, title: 'Weekly Test 14 · Genetics', dateOfExam: '5:10 pm, 8 Nov, 2026', examEpoch: 1794137400, reportReady: true, score: 46.5, accuracy: 52, maxScore: 80, classAverage: 55, topScore: 76, classStrength: 68 },
+      { attemptId: 200377, quizId: 4, title: 'Weekly Test 14 · Genetics', dateOfExam: '11:02 am, 7 Nov, 2026', examEpoch: 1794029520, reportReady: true, score: 55, accuracy: 61.3, maxScore: 80, classAverage: 55, topScore: 76, classStrength: 68 },
+    ];
+    const second = [
+      { attemptId: 200102, quizId: 1, title: 'Weekly Test 12 · Organic Chemistry', dateOfExam: '4:45 pm, 25 Oct, 2026', examEpoch: 1792926900, reportReady: true, score: 88, accuracy: 70, maxScore: null, classAverage: 79.2, topScore: 112, classStrength: 59 },
+      { attemptId: 200044, quizId: 3, title: 'Weekly Test 11 · Thermodynamics', dateOfExam: '4:31 pm, 18 Oct, 2026', examEpoch: 1792321260, reportReady: true, score: 72, accuracy: 66.7, maxScore: 120, classAverage: null, topScore: null, classStrength: null },
+    ];
+    return ok({ attempts: page === 0 ? first : second, page, size: 20, hasMore: page === 0 });
+  },
   'GET /user/quiz/quiz-summary.php': () => ok([
     { attemptId: 13, quizId: 5, title: 'Weekly Test 15 · Electrostatics', dateOfExam: '03 Oct 2026', score: '92 / 120', accuracy: 82 },
     { attemptId: 12, quizId: 4, title: 'Weekly Test 14 · Genetics', dateOfExam: '26 Sep 2026', score: '58 / 80', accuracy: 74 },

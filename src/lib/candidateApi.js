@@ -84,6 +84,14 @@ export async function listWeeklyExams() {
   return unwrap(await api.get('/user/quiz/list-quiz.php?page=1&size=10'));
 }
 
+// The candidate's finished quiz attempts, newest first, each with their score and
+// the class figures of that quiz (user/quiz/attempt-history.php). `page` is 0-based.
+// { attempts: [{ attemptId, quizId, title, dateOfExam, reportReady, score, accuracy,
+//   maxScore, classAverage, topScore, classStrength }], page, size, hasMore }
+export async function getQuizAttemptHistory(page = 0, size = 20) {
+  return unwrap(await api.get(`/user/quiz/attempt-history.php?page=${page}&size=${size}`));
+}
+
 export async function getWeeklyExamSummary() {
   return unwrap(await api.get('/user/quiz/quiz-summary.php'));
 }

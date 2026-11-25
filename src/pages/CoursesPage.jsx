@@ -117,6 +117,8 @@ export default function CoursesPage() {
     return { id: bundle.id, title: bundle.title, image: bundle.photo || null, fallbackIcon: Icon.Book, badges, meta: [validity, size], coverMeta: [validity], stats };
   });
 
+  const showRecent = Boolean(selectedBundle && bundleContent && recent.length > 0);
+
   return (
     <Layout title="Courses" hideTitle>
       <div className="cp-page">
@@ -150,13 +152,16 @@ export default function CoursesPage() {
         )}
 
 
-        {selectedBundle && bundleContent && recent.length > 0 && (
-          <Card>
+        {/* Phones: recently watched above the modules. Tablet and desktop: modules and
+            recently watched side by side, 3:1 (courses.css). */}
+        {selectedBundle && (
+        <div className={`cp-courses-split ${showRecent ? 'has-recent' : ''}`}>
+        {showRecent && (
+          <Card className="cp-courses-recent">
             <WatchHistory items={recent} moduleNames={Object.fromEntries(Object.entries(bundleContent.modules).map(([id, m]) => [id, m.name]))} />
           </Card>
         )}
 
-        {selectedBundle && (
           <Card className="course-bundle-content-container">
             <div className="cp-card-head">
               <h2>Modules</h2>
@@ -204,6 +209,7 @@ export default function CoursesPage() {
               </>
             )}
           </Card>
+        </div>
         )}
       </div>
     </Layout>

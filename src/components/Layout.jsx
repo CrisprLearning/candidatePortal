@@ -64,7 +64,8 @@ function ProfileMenu({ photo, name, pending, onLogout }) {
  * with an in-flow heading; `backTo` adds a link back (report and revisit pages)
  * and `user` overrides the profile shown in the shell.
  */
-export default function Layout({ title, hideTitle = false, backTo, user, children }) {
+// `actions`: page-level buttons for the top right of the page heading.
+export default function Layout({ title, hideTitle = false, backTo, actions, user, children }) {
   const navigate = useNavigate();
   const { profile, loading } = useUser() || {};
   const me = user || profile || {};
@@ -137,6 +138,7 @@ export default function Layout({ title, hideTitle = false, backTo, user, childre
             {/* `hideTitle` keeps the title for the browser tab only. */}
             {hideTitle ? <span /> : <h1 className="cp-pagehead-title">{title}</h1>}
             <div className="cp-pagehead-actions">
+              {actions}
               {backTo && (
                 <NavLink className="cp-btn cp-btn-ghost cp-btn-sm" to={backTo.path}>
                   <Icon.ChevronLeft width={16} height={16} />
@@ -149,7 +151,7 @@ export default function Layout({ title, hideTitle = false, backTo, user, childre
           {children}
         </main>
 
-        <footer className="cp-foot" role="contentinfo">&copy; 2026 Crispr Learning</footer>
+        <footer className="cp-foot" role="contentinfo">&copy; 2027 Crispr Learning</footer>
 
         <nav className="cp-tabbar" aria-label="Primary">
           {nav.filter((n) => n.tab !== false).map(({ path, short, icon: Ico }) => (
