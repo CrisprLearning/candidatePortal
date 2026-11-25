@@ -203,7 +203,11 @@ const routes = {
     const second = [
       { id: 911, orderReference: '911', status: 'successful', items: [{ code: 'IATFREE', title: 'IAT Free Starter Mocks', type: 'Test Series', unitPrice: 0, number: 1 }], subTotal: 0, discount: 0, extras: 0, amount: 0, gatewayOrder: 'order_Pa1', paymentReference: 'pay_Pa1zz', date: '14 Mar, 2025', time: '9:05 am', createdAt: 1741923300 },
     ];
-    return ok({ transactions: page === 0 ? first : second, page, size: 20, hasMore: page === 0 });
+    // ?status=successful: paid orders only, as one page.
+    if (new URL(url, 'http://x').searchParams.get('status') === 'successful') {
+      return ok({ transactions: page === 0 ? [...first, ...second].filter((t) => t.status === 'successful') : [], status: 'successful', page, size: 20, hasMore: false });
+    }
+    return ok({ transactions: page === 0 ? first : second, status: 'all', page, size: 20, hasMore: page === 0 });
   },
   'GET /user/get-billing-address.php': () => ok({ mobile: '9876543210', name: 'Aarav Menon', address: '', locality: '', city: 'Kochi', state: 'Kerala', pincode: '', email: 'aarav@example.com' }),
   'POST /public/courses.php': (_b, url) => {

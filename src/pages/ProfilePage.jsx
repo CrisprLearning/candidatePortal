@@ -24,6 +24,13 @@ const TABS = [
   { id: 4, label: () => 'ID Card Photo', icon: Icon.Image, offlineOnly: true }, // classroom students only
 ];
 
+// My Transactions: whether pending and failed orders are hidden. Hidden unless
+// the candidate chose to see them ('0' in localStorage).
+const HIDE_UNSUCCESSFUL_KEY = 'cpHideUnsuccessfulTransactions';
+function readHideUnsuccessful() {
+  try { return window.localStorage.getItem(HIDE_UNSUCCESSFUL_KEY) !== '0'; } catch { return true; }
+}
+
 function parentsNames(p = {}) {
   const mother = p.motherName || '';
   const father = p.fatherName || '';
@@ -183,18 +190,32 @@ export default function ProfilePage() {
   // Transactions tab: every purchase, loaded a page at a time when the tab is opened.
   const [txns, setTxns] = useState({ list: null, page: 0, hasMore: false, loading: false, error: false });
   const [orderOpen, setOrderOpen] = useState(null); // the transaction shown in the order drawer
-  function loadTransactions(page) {
+  // "Show Successful Only": on unless the candidate turned it off (remembered in localStorage).
+  const [hideUnsuccessful, setHideUnsuccessful] = useState(readHideUnsuccessful);
+  const txnRequest = useRef(0); // a reply to an older request (the toggle was flipped since) is dropped
+  function loadTransactions(page, successfulOnly = hideUnsuccessful) {
+    const seq = ++txnRequest.current;
     setTxns((t) => ({ ...t, loading: true, error: false }));
-    getTransactions(page)
-      .then((d) => setTxns((t) => ({
-        list: page === 0 ? (d?.transactions || []) : [...(t.list || []), ...(d?.transactions || [])],
-        page, hasMore: !!d?.hasMore, loading: false, error: false,
-      })))
-      .catch(() => setTxns((t) => ({ ...t, loading: false, error: true })));
+    getTransactions(page, { successfulOnly })
+      .then((d) => {
+        if (seq !== txnRequest.current) return;
+        setTxns((t) => ({
+          list: page === 0 ? (d?.transactions || []) : [...(t.list || []), ...(d?.transactions || [])],
+          page, hasMore: !!d?.hasMore, loading: false, error: false,
+        }));
+      })
+      .catch(() => { if (seq === txnRequest.current) setTxns((t) => ({ ...t, loading: false, error: true })); });
   }
   useEffect(() => {
     if (activeTab === 5) loadTransactions(0);
   }, [activeTab]);
+
+  function toggleHideUnsuccessful(hide) {
+    setHideUnsuccessful(hide);
+    try { window.localStorage.setItem(HIDE_UNSUCCESSFUL_KEY, hide ? '1' : '0'); } catch { /* storage blocked: applies to this visit only */ }
+    setTxns({ list: null, page: 0, hasMore: false, loading: true, error: false });
+    loadTransactions(0, hide);
+  }
 
   // Edit Details belongs to the About tab, so About stays highlighted while editing.
   const isTabActive = (id) => activeTab === id || (id === 1 && activeTab === 3);
@@ -405,7 +426,11 @@ export default function ProfilePage() {
                 <OrderDetailsDrawer order={orderOpen} onClose={() => setOrderOpen(null)} />
                 <div className="cp-card-head">
                   <h2>My Transactions</h2>
-                  {txns.list && <Pill tone="ghost">{txns.list.length}{txns.hasMore ? '+' : ''} {txns.list.length === 1 && !txns.hasMore ? 'purchase' : 'purchases'}</Pill>}
+                  <label className="cp-switch">
+                    <input type="checkbox" role="switch" checked={hideUnsuccessful} onChange={(e) => toggleHideUnsuccessful(e.target.checked)} />
+                    <i aria-hidden="true" />
+                    <span>Show Successful Only</span>
+                  </label>
                 </div>
                 {txns.list && txns.list.length > 0 && (
                   <div className="cp-table-wrap">
@@ -445,7 +470,7 @@ export default function ProfilePage() {
                     </table>
                   </div>
                 )}
-                {txns.list && txns.list.length === 0 && <p className="cp-empty cp-foot-note">You have not made any purchase yet.</p>}
+                {txns.list && txns.list.length === 0 && <p className="cp-empty cp-foot-note">{hideUnsuccessful ? 'You have no successful transactions yet. Turn off the filter above to see pending and failed ones.' : 'You have not made any purchase yet.'}</p>}
                 {!txns.list && txns.loading && <p className="cp-empty cp-foot-note">Loading your transactions…</p>}
                 {txns.error && (
                   <p className="cp-empty cp-foot-note">

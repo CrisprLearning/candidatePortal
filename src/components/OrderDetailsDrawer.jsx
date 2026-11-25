@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from './Icons';
 import { Pill } from './ui';
 
@@ -18,12 +18,47 @@ const DELIVERY_STATUS = {
 };
 
 // One installment of an order bought on a payment plan (candidate_payments), as transactions.php reports it.
+// The status is candidate_payments.paymentStatus, shown as it is stored.
 const INSTALLMENT_STATUS = {
   paid: { label: 'Paid', tone: 'lime' },
-  pending: { label: 'Due', tone: 'sky' },
+  scheduled: { label: 'Scheduled', tone: 'ghost' },
+  pending: { label: 'Pending', tone: 'sky' },
   overdue: { label: 'Overdue', tone: 'orange' },
   failed: { label: 'Failed', tone: 'orange' },
 };
+
+// "size" -> "Size", as the cart labels an item's option.
+const optionLabel = (name) => name.charAt(0).toUpperCase() + name.slice(1);
+
+/** The info icon beside a tax or charge. Hovering, focusing or clicking it shows how much each item added. */
+function ChargeSplit({ row }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <span className={`cp-charge-info ${open ? 'is-open' : ''}`} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        aria-label={`${row.label}: split by item`}
+        aria-expanded={open}
+        aria-describedby={id}
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); } }}
+      >
+        i
+      </button>
+      <span className="cp-charge-split" role="tooltip" id={id}>
+        <strong>{row.label} by item</strong>
+        {row.items.map((item) => (
+          <span className="cp-charge-split-row" key={item.itemCode}>
+            <span>{item.title || item.itemCode}{typeof item.percent === 'number' && <em> ({item.percent}%)</em>}</span>
+            <span>{rupees(item.value)}</span>
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
 
 export function rupees(paise) {
   const value = Number(paise) / 100;
@@ -74,6 +109,9 @@ export default function OrderDetailsDrawer({ order, onClose }) {
   // What an item paid at checkout, and how much of the order was left for later installments.
   const fullPrice = (item) => item.unitPrice * (item.number || 1);
   const paidFor = (item) => (item.paymentPlan === 'INSTALLMENT' && Number.isFinite(item.payNow) ? item.payNow : fullPrice(item));
+  // Books and merchandise can be bought in several copies; courses and test series are one each.
+  const isCounted = (item) => item.type === 'Book' || item.type === 'Merchandise' || item.number > 1;
+  const chargeRows = [...(order.charges?.taxes || []), ...(order.charges?.extras || [])];
   const deferred = items.reduce((sum, item) => sum + Math.max(0, fullPrice(item) - paidFor(item)), 0);
   const cityLine = addr ? [addr.locality, addr.city].filter(Boolean).join(', ') : '';
   const stateLine = addr ? [addr.state, addr.pincode].filter(Boolean).join(' - ') : '';
@@ -103,20 +141,37 @@ export default function OrderDetailsDrawer({ order, onClose }) {
             {items.length === 0 && <p className="cp-order-muted">No item details are stored for this order.</p>}
             <ul className="cp-order-items">
               {items.map((item, i) => (
+                // The same details, in the same words, as the checkout cart showed for the item.
                 <li key={i}>
                   <div>
                     <strong>{item.title || item.code}</strong>
-                    <small>{[item.type, item.number > 1 ? `${item.number} × ${rupees(item.unitPrice)}` : '', item.paymentPlan === 'INSTALLMENT' ? 'Paid in installments' : ''].filter(Boolean).join(' · ')}</small>
+                    {item.type && <small>{item.type}</small>}
+                    {Object.entries(item.options || {}).map(([name, value]) => (
+                      <small key={name}>{optionLabel(name)}: {value}</small>
+                    ))}
+                    {isCounted(item) && <small>Quantity: {item.number || 1}</small>}
+                    {item.paymentPlan === 'INSTALLMENT' && <small>Payment Plan: Installments</small>}
                   </div>
-                  {/* On an installment plan: what was paid for the item at checkout, not its whole fee. */}
-                  <span>{rupees(paidFor(item))}</span>
+                  {/* On an installment plan: what was paid for the item at checkout, with its whole fee beneath. */}
+                  <span className="cp-order-price">
+                    {rupees(paidFor(item))}
+                    {item.paymentPlan === 'INSTALLMENT' && <small>overall fee {rupees(fullPrice(item))}</small>}
+                    {isCounted(item) && <small>{rupees(item.unitPrice)} each</small>}
+                  </span>
                 </li>
               ))}
             </ul>
             <dl className="cp-order-totals">
               <div><dt>Subtotal</dt><dd>{rupees(order.subTotal - deferred)}</dd></div>
-              {order.discount > 0 && <div><dt>Discount</dt><dd>- {rupees(order.discount)}</dd></div>}
-              {order.extras > 0 && <div><dt>Taxes and charges</dt><dd>{rupees(order.extras)}</dd></div>}
+              {order.discount > 0 && <div><dt>Discounts</dt><dd>- {rupees(order.discount)}</dd></div>}
+              {/* One row per tax or charge, named as in the cart, with its split by item behind the info icon. */}
+              {chargeRows.map((row) => (
+                <div key={row.label}>
+                  <dt className="cp-order-charge">{row.label}{row.items?.length > 0 && <ChargeSplit row={row} />}</dt>
+                  <dd>{rupees(row.value)}</dd>
+                </div>
+              ))}
+              {chargeRows.length === 0 && order.extras > 0 && <div><dt>Taxes and charges</dt><dd>{rupees(order.extras)}</dd></div>}
               <div className="is-total"><dt>{onInstallments ? 'Paid now' : 'Total'}</dt><dd>{rupees(order.amount)}</dd></div>
               {/* The whole fee of the order: this payment and the installments still to come. */}
               {onInstallments && <div><dt>Total Course Fee</dt><dd>{rupees(order.amount + deferred)}</dd></div>}

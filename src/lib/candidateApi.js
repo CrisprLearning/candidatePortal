@@ -62,9 +62,10 @@ export async function removeIdPhoto() {
   return raw(await api.post('/user/remove-id-photo.php', {}));
 }
 
-// The candidate's purchases, newest first: successful, pending and failed. `page` is 0-based.
-export async function getTransactions(page = 0, size = 20) {
-  return unwrap(await api.get(`/user/transactions.php?page=${page}&size=${size}`));
+// The candidate's purchases, newest first. `page` is 0-based. `successfulOnly`
+// leaves out the pending and failed ones (filtered by the API).
+export async function getTransactions(page = 0, { successfulOnly = false, size = 20 } = {}) {
+  return unwrap(await api.get(`/user/transactions.php?page=${page}&size=${size}${successfulOnly ? '&status=successful' : ''}`));
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
