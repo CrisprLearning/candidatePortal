@@ -151,7 +151,7 @@ export default function OrderDetailsDrawer({ order, onClose }) {
                       <small key={name}>{optionLabel(name)}: {value}</small>
                     ))}
                     {isCounted(item) && <small>Quantity: {item.number || 1}</small>}
-                    {item.paymentPlan === 'INSTALLMENT' && <small>Payment Plan: Deferred Payment</small>}
+                    {item.paymentPlan === 'INSTALLMENT' && <small>Payment Plan: Multiple Payments</small>}
                   </div>
                   {/* On an installment plan: what was paid for the item at checkout. */}
                   <span className="cp-order-price">

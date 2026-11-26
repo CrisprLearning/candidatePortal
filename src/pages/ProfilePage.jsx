@@ -508,7 +508,7 @@ export default function ProfilePage() {
                               {/* Plain text, not a chip. An order that was never paid is not "Fully Paid". */}
                               <td className="cp-txn-payment">
                                 {t.paymentMode === 'INSTALLMENTS'
-                                  ? <span title="Open the order to see the payment schedule">Installments</span>
+                                  ? <span title="Open the order to see the payment schedule">Multiple Payments</span>
                                   : (t.status === 'successful' ? 'Fully Paid' : <span className="cp-td-muted">-</span>)}
                               </td>
                               <td className="cp-txn-amount"><strong>{rupees(t.amount)}</strong></td>
