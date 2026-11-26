@@ -2,6 +2,8 @@
 
 .cp-page { display: flex; flex-direction: column; gap: 14px; max-width: 1240px; margin: 0 auto; }
 .cp-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+/* A column never grows to fit a wide table inside it; the table scrolls sideways in its .cp-table-wrap instead. */
+.cp-grid-profile > * { min-width: 0; }
 
 .cp-card {
   background: var(--panel); border-radius: var(--radius); padding: 18px;
